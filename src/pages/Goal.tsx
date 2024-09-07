@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useMemo, useEffect } from "react";
+import React, { useState, useCallback, useEffect } from "react";
 import { useUser } from '../hooks/useUser';
 import { useForm } from "react-hook-form";
 import axios from "axios";
@@ -40,18 +40,66 @@ const Goal: React.FC = () => {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const { userId, setUserIdAction } = useUser();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [totalTime, setTotalTime] = useState<number>(0);
 
   const {
-    register, //フォームから入力された値のstate管理、バリデーション処理が可能
+    register,
     handleSubmit,
     formState: { errors },
     setValue,
     reset,
+    watch,
   } = useForm<Goal>({
     mode: "onChange",
-    shouldUnregister: false,
-    // resolver: zodResolver(validationSchema),
+    defaultValues: {
+      name: "",
+      current_status: "",
+      period_start: "",
+      period_end: "",
+      description: "",
+      status: 0, // 初期値を0に設定
+      total_time: 0,
+      progress_percentage: 0,
+    },
   });
+
+  // 期間の開始日と終了日を監視
+  const periodStart = watch("period_start");
+  const periodEnd = watch("period_end");
+
+  // 進捗状況を計算する関数
+  const calculateStatus = useCallback(async () => {
+    if (!periodStart || !periodEnd) return 0;
+
+    try {
+      // // バックエンドAPIを呼び出して学習記録を取得
+      // const response = await axios.get(API_ENDPOINTS.DAILY_HISTORY(userId));
+      // const dailyHistory = response.data;
+
+      // // 学習記録から総学習時間を計算
+      // const totalStudyTime = dailyHistory.reduce((sum, record) => sum + record.study_time, 0);
+
+      // // 進捗率を計算（総学習時間 / 目標時間 * 100）
+      // const progressPercentage = Math.min(Math.round((totalStudyTime / watch("total_time")) * 100), 100);
+
+      // return progressPercentage;
+      return 0;
+    } catch (error) {
+      console.error("Failed to fetch daily history:", error);
+      return 0;
+    }
+  }, [periodStart, periodEnd, userId, watch]);
+
+  // 期間が変更されたときに進捗状況を更新
+  useEffect(() => {
+    const updateStatus = async () => {
+      const newStatus = await calculateStatus();
+      setValue("status", newStatus);
+      setValue("progress_percentage", newStatus);
+    };
+    updateStatus();
+  }, [periodStart, periodEnd, calculateStatus, setValue]);
+
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -181,7 +229,8 @@ const Goal: React.FC = () => {
    */
   //onSubmit関数の定義
   const onSubmit = async (data: Goal) => {
-    //firebase_uidが存在しない場合
+    console.log("onSubmit関数が呼び出されました", data);
+    console.log("Current userId:", userId);  // この行を追加
     if (!userId) {
       setServerError("ユーザーIDが見つかりません。ログインしてください。");
       return;
@@ -191,25 +240,25 @@ const Goal: React.FC = () => {
     //送信データの作成
     const submissionData = {
       ...data,
-      name: data.name,   // フォームから取得したnameを追加
-      userId: userId,    // ユーザーID
-      goalId: selectedGoal?.id,  // 目標ID
+      name: data.name,
+      user_id: Number(userId),
+      goalId: selectedGoal?.id,
       description: data.description,
       estimated_time: data.estimated_time,
       priority: data.priority,
+      period_start: data.period_start,
+      period_end: data.period_end,
+      current_status: data.current_status,
+      status: data.status,
     };
 
     console.log("送信データ:", JSON.stringify(submissionData, null, 2));
 
 
     try {
-      //ローディング中の表示
       setIsLoading(true);
-      //成功時の処理
-      console.log("axios.postを呼び出します");
-      //エラー空白
       setServerError(null);
-      //APIエンドポイントにデータを送信
+      console.log("axios.postを呼び出します");
       const result: any = await axios.post(
         API_ENDPOINTS.CREATE_GOAL,
         submissionData,
@@ -217,6 +266,7 @@ const Goal: React.FC = () => {
           headers: {
             "Content-Type": "application/json",
           },
+          withCredentials: true, // CORSの問題を回避するために追加
         }
       );
       console.log("APIレスポンス:", result.data);
@@ -228,6 +278,7 @@ const Goal: React.FC = () => {
         throw new Error("goalId is undefined");
       }
       await axios.get('/sanctum/csrf-cookie');
+
       const chatResult: any = await axios.post(
         API_ENDPOINTS.CHAT_GOAL(goalId),
         {
@@ -248,8 +299,24 @@ const Goal: React.FC = () => {
           .replace(/```json|```/g, "")
           .trim();
         parsedChatResponse = JSON.parse(cleanedResponse);
+
+        // 総時間を計算し、状態を更新
+        const newTotalTime = parsedChatResponse.reduce((sum, task) => sum + task.estimatedTime, 0);
+        setValue("total_time", newTotalTime);
+
+        // 進捗状況を再計算
+        const newStatus = await calculateStatus();
+        setValue("status", newStatus);
+        setValue("progress_percentage", newStatus);
       } catch (error) {
-        console.error("JSONのパースに失敗しました:", error);
+        handleError(error);
+        console.error("エラー:", error);
+        if (axios.isAxiosError(error)) {
+          console.log("サーバーレスポンス:", error.response?.data);
+          console.log("リクエストデータ:", error.config?.data);
+        }
+      } finally {
+        setIsLoading(false);
       }
 
       setChatResponse(parsedChatResponse);
@@ -445,19 +512,45 @@ const Goal: React.FC = () => {
     }
   };
 
+
+  useEffect(() => {
+    console.log("chatResponse updated:", chatResponse);
+  }, [chatResponse]);
+
+  useEffect(() => {
+    console.log("tasks updated:", tasks);
+  }, [tasks]);
+
+  useEffect(() => {
+    if (chatResponse.length > 0 && tasks.length === 0) {
+      setTasks(chatResponse);
+    }
+  }, [chatResponse, tasks]);
+
+
   /**
    * 指定された目標IDに関連するタスクを取得する
    * @param {number} id - 目標ID
    * @returns {Promise<void>}
    */
-  const fetchTasks = async (id: number) => {
+  const fetchTasks = async (goalId: number) => {
     try {
-      const response = await axios.get(API_ENDPOINTS.GOAL_TASKS(id));
-      setTasks(response.data.tasks as Task[]); // 型アサーションを使用
+      const response = await axios.get(API_ENDPOINTS.GOAL_TASKS(goalId));
+      console.log("Fetched tasks:", response.data);
+      if (response.data && Array.isArray(response.data)) {
+        const transformedTasks = transformTasks(response.data);
+        setTasks(transformedTasks);
+        console.log("Transformed tasks:", transformedTasks);
+      } else {
+        console.error("Unexpected response format:", response.data);
+        setServerError("タスクデータの形式が不正です");
+      }
     } catch (error) {
-      handleError(error);
+      console.error("Error fetching tasks:", error);
+      setServerError("タスクの取得に失敗しました");
     }
   };
+
 
   const handleEdit = (task: Task) => {
     setEditingId(task.id.toString());  // number を string に変換
@@ -472,12 +565,24 @@ const Goal: React.FC = () => {
     return <div>Loading...</div>;  // ユーザーIDがまだ取得されていない場合
   }
 
+  const transformTasks = (tasks: any[]): Task[] => {
+    return tasks.map((task, index) => ({
+      id: index + 1, // 一意のIDを生成
+      name: task.taskName,
+      estimatedTime: task.taskTime,
+      priority: task.taskPriority,
+      order: index + 1
+    }));
+  };
+
+  console.log("Validation errors:", errors);
+  console.log("chatResponse:", chatResponse);
+
   return (
     <>
-      <section className="section">
-        <h1 className="h1">近い未来の目標</h1>
-        {/* <form onSubmit={handleSubmit(onSubmit)}> */}
-        <form onSubmit={handleSubmit(onSubmit)}>
+    <section className="section">
+      <h1 className="h1">近い未来の目標</h1>
+      <form onSubmit={handleSubmit(onSubmit)}>
           <div className="my-5">
             <Label htmlFor="name" className="w-full block text-left">
               目標
@@ -495,6 +600,7 @@ const Goal: React.FC = () => {
                 {errors.name.message as React.ReactNode}
               </p>
             )}
+            {console.log("Name field error:", errors.name)}
           </div>
           <div className="my-5">
             <Label
@@ -572,11 +678,36 @@ const Goal: React.FC = () => {
               {...register("description")}
             />
           </div>
-          {serverError && (
-            <Alert variant="destructive">
-              <AlertDescription>{serverError}</AlertDescription>
-            </Alert>
-          )}
+
+          <div className="my-5">
+            <Label htmlFor="status" className="w-full block text-left">
+              進捗状況 (%)
+            </Label>
+            <Input
+              type="number"
+              id="status"
+              {...register("status")}
+              readOnly // ユーザーによる編集を防ぐ
+            />
+          </div>
+
+          <div className="my-5">
+            <Label htmlFor="total_time" className="w-full block text-left">
+              総予定時間 (時間)
+            </Label>
+            <Input
+              type="number"
+              id="total_time"
+              {...register("total_time")}
+              readOnly // ユーザーによる編集を防ぐ
+            />
+
+            {serverError && (
+              <Alert variant="destructive">
+                <AlertDescription>{serverError}</AlertDescription>
+              </Alert>
+            )}
+          </div>
           <div className="my-5">
             <Button type="submit" className="button" disabled={isLoading}>
               {isLoading ? "送信中..." : "目標を設定"}
@@ -589,40 +720,40 @@ const Goal: React.FC = () => {
             <p className="text-green-600">{response}</p>
           </div>
         )}
-        {chatResponse.length > 0 && (
-          // <SortableTaskTable chatResponse={chatResponse} />
-          <SortableContext
-            items={tasks.map((t) => t.id)}
-            strategy={verticalListSortingStrategy}
-          >
-            <table className="min-w-full bg-white">
-              <thead>
-                <tr>
-                  <th className="border px-4 py-2">順序</th>
-                  <th className="border px-4 py-2">タスク名</th>
-                  <th className="border px-4 py-2">所要時間</th>
-                  <th className="border px-4 py-2">優先度</th>
-                  <th className="border px-4 py-2">アクション</th>
-                </tr>
-              </thead>
-              <tbody>
-                {chatResponse.map((task, index) => (
-                  <SortableItem
-                    key={task.id}
-                    id={task.id}
-                    task={task}
-                    index={index}
-                    editingId={editingId}
-                    editedTask={editedTask}
-                    handleEdit={handleEdit}
-                    handleSave={handleSave}
-                    handleChange={handleChange}
-                    handleDeleteTask={handleDeleteTask}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </SortableContext>
+        {tasks.length > 0 ? ( 
+
+        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+          <table className="min-w-full bg-white">
+            <thead>
+              <tr>
+                <th className="border px-4 py-2">順序</th>
+                <th className="border px-4 py-2">タスク名</th>
+                <th className="border px-4 py-2">所要時間</th>
+                <th className="border px-4 py-2">優先度</th>
+                <th className="border px-4 py-2">アクション</th>
+              </tr>
+            </thead>
+            <tbody>
+              {tasks.map((task) => (
+                <SortableItem
+                  key={task.id || index}
+                  id={task.id}
+                  task={task}
+                  index={task.order - 1}
+                  editingId={editingId}
+                  editedTask={editedTask}
+                  handleEdit={handleEdit}
+                  handleSave={handleSave}
+                  handleChange={handleChange}
+                  handleDeleteTask={handleDeleteTask}
+                />
+              ))}
+            </tbody>
+          </table>
+        </SortableContext>
+
+        ) : (
+          <p>タスクがありません。または読み込み中です。</p>
         )}
       </section>
       <Link to="/goallist">

@@ -6,7 +6,9 @@ import { Button } from "@/components/ui/button";
 import type { SortableItemProps } from "@/Types/index";
 
 const SortableItem: React.FC<SortableItemProps> = ({
+  id,
   task,
+  index,
   editingId,
   editedTask,
   handleEdit,
@@ -15,15 +17,15 @@ const SortableItem: React.FC<SortableItemProps> = ({
   handleDeleteTask,
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: task.id });
+    useSortable({ id: id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
     transition,
   };
 
-  const isEditing = editingId === task.id.toString();
-
+  const isEditing = task.id != null && editingId === task.id.toString();
+  
   return (
     <tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
       <td className="border px-4 py-2">{task.order}</td>
@@ -40,7 +42,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
       <td className="border px-4 py-2">
         {isEditing ? (
           <Input
-            value={editedTask?.estimatedTime.toString() || ""}
+            value={editedTask?.estimatedTime?.toString() || ""}
             onChange={(e) => handleChange(e, "estimatedTime")}
             type="number"
           />
@@ -73,7 +75,9 @@ const SortableItem: React.FC<SortableItemProps> = ({
         ) : (
           <div className="flex space-x-2">
             <Button onClick={() => handleEdit(task)}>編集</Button>
-            <Button className="ml-2" onClick={() => handleDeleteTask(task.id)}>削除</Button>
+            <Button className="ml-2" onClick={() => handleDeleteTask(task.id)}>
+              削除
+            </Button>
           </div>
         )}
       </td>

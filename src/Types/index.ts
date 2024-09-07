@@ -20,15 +20,15 @@ export interface AuthState {
 }
 
 export interface SortableItemProps {
-  id: number;
-  task: Task;
+  id: string | number;
+  task: Task; // Task型の定義が必要です
   index: number;
   editingId: string | null;
   editedTask: Task | null;
   handleEdit: (task: Task) => void;
-  handleSave: (id: number) => void;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement> | { target: { value: string } }, field: keyof Task) => void;
-  handleDeleteTask: (id: number) => void;
+  handleSave: (id: string | number) => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: string) => void;
+  handleDeleteTask: (id: string | number) => void;
 }
 
 export interface GoalItem {
@@ -78,7 +78,8 @@ export interface Goal {
   period_start: string; // 'YYYY-MM-DD'形式
   period_end: string; // 'YYYY-MM-DD'形式
   description: string | null;
-  status: 'not_started' | 'in_progress' | 'completed' | 'cancelled';
+  status: number;
+  total_time: number; 
   progress_percentage: number;
   created_at: string;
   updated_at: string;
