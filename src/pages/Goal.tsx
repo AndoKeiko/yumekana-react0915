@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { API_ENDPOINTS } from "@/config/api";
 import type { Task, Goal } from "@/Types/index";
+
 import {
   KeyboardSensor,
   PointerSensor,
@@ -25,13 +26,21 @@ import {
 } from "@dnd-kit/sortable";
 import SortableItem from "./SortableItem";
 
+import { Calendar, momentLocalizer } from 'react-big-calendar';
+import moment from 'moment';
+import 'react-big-calendar/lib/css/react-big-calendar.css';
+const localizer = momentLocalizer(moment);
+
+interface UserResponse {
+  users: { id: number }[];
+}
+
 //Goalコンポーネント
 const Goal: React.FC = () => {
   //状態変数の定義
   const [serverError, setServerError] = useState<string | null>(null);
   const [response, setResponse] = useState<string>("");
   const [chatResponse, setChatResponse] = useState<Task[]>([]);
-  // const memoizedChatResponse = useMemo(() => chatResponse, [chatResponse]);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
@@ -40,66 +49,47 @@ const Goal: React.FC = () => {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const { userId, setUserIdAction } = useUser();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [totalTime, setTotalTime] = useState<number>(0);
+  const [calculatedTotalTime, setCalculatedTotalTime] = useState<number>(0);
+  const [calculatedProgressPercentage, setCalculatedProgressPercentage] = useState<number>(0);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
-    setValue,
     reset,
     watch,
+    setValue,
   } = useForm<Goal>({
     mode: "onChange",
     defaultValues: {
       name: "",
-      current_status: "",
-      period_start: "",
-      period_end: "",
+      currentStatus: "",
+      periodStart: "",
+      periodEnd: "",
       description: "",
-      status: 0, // 初期値を0に設定
-      total_time: 0,
-      progress_percentage: 0,
+      status: 0,
+      totalTime: 0,
+      progressPercentage: 0,
     },
   });
 
   // 期間の開始日と終了日を監視
-  const periodStart = watch("period_start");
-  const periodEnd = watch("period_end");
+  const status = watch("status");
+  const totalTime = watch("totalTime");
 
   // 進捗状況を計算する関数
-  const calculateStatus = useCallback(async () => {
-    if (!periodStart || !periodEnd) return 0;
-
-    try {
-      // // バックエンドAPIを呼び出して学習記録を取得
-      // const response = await axios.get(API_ENDPOINTS.DAILY_HISTORY(userId));
-      // const dailyHistory = response.data;
-
-      // // 学習記録から総学習時間を計算
-      // const totalStudyTime = dailyHistory.reduce((sum, record) => sum + record.study_time, 0);
-
-      // // 進捗率を計算（総学習時間 / 目標時間 * 100）
-      // const progressPercentage = Math.min(Math.round((totalStudyTime / watch("total_time")) * 100), 100);
-
-      // return progressPercentage;
-      return 0;
-    } catch (error) {
-      console.error("Failed to fetch daily history:", error);
-      return 0;
+  const calculateProgressPercentage = useCallback(() => {
+    if (totalTime > 0) {
+      const progress = (status / totalTime) * 100;
+      return Math.min(100, Math.max(0, Math.round(progress)));
     }
-  }, [periodStart, periodEnd, userId, watch]);
+    return 0;
+  }, [status, totalTime]);
 
-  // 期間が変更されたときに進捗状況を更新
   useEffect(() => {
-    const updateStatus = async () => {
-      const newStatus = await calculateStatus();
-      setValue("status", newStatus);
-      setValue("progress_percentage", newStatus);
-    };
-    updateStatus();
-  }, [periodStart, periodEnd, calculateStatus, setValue]);
-
+    const progressPercentage = calculateProgressPercentage();
+    setValue("progressPercentage", progressPercentage);
+  }, [calculateProgressPercentage, setValue]);
 
   const sensors = useSensors(
     useSensor(PointerSensor),
@@ -110,7 +100,7 @@ const Goal: React.FC = () => {
 
   const fetchUserData = useCallback(async () => {
     try {
-      const response = await axios.get(API_ENDPOINTS.USER, { withCredentials: true });
+      const response = await axios.get<UserResponse>(API_ENDPOINTS.USER, { withCredentials: true });
       console.log('User data response:', response.data);
 
       if (response.data && response.data.users && response.data.users[0] && response.data.users[0].id) {
@@ -151,6 +141,7 @@ const Goal: React.FC = () => {
   }, [userId]);
 
 
+
   useEffect(() => {
     fetchUserData();
   }, [fetchUserData]);
@@ -160,7 +151,6 @@ const Goal: React.FC = () => {
       fetchGoals();
     }
   }, [userId, fetchGoals]);
-
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
@@ -178,49 +168,85 @@ const Goal: React.FC = () => {
     }
   };
 
-  const handleSave = async (id: number) => {
+  const handleSave = async (id: string | number) => {
     if (!editedTask) return;
 
     try {
-      const response = await axios.put<Task>(API_ENDPOINTS.UPDATE_TASK(id), editedTask);
-      const updatedTask: Task = response.data;
-      setTasks(prevTasks => prevTasks.map(task =>
-        task.id === id ? { ...task, ...updatedTask } : task
-      ));
-      setEditingId(null);
-      setEditedTask(null);
+        const response = await axios.put<Task>(API_ENDPOINTS.UPDATE_TASK(Number(id)), editedTask);
+        const updatedTask: Task = response.data;
+        setTasks(prevTasks => prevTasks.map(task =>
+            task.id === Number(id) ? { ...task, ...updatedTask } : task
+        ));
+        setEditingId(null);
+        setEditedTask(null);
     } catch (error) {
-      console.error("Failed to update task:", error);
-      setServerError("タスクの更新に失敗しました");
+        console.error("Failed to update task:", error);
+        setServerError("タスクの更新に失敗しました");
     }
-  };
+};
 
-  const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement> | { target: { value: string } },
-    field: keyof Task
-  ) => {
-    if (editedTask) {
-      setEditedTask({
-        ...editedTask,
-        [field]: field === "estimatedTime" || field === "priority" ? Number(e.target.value) : e.target.value
-      });
+const handleChange = (
+  e: React.ChangeEvent<HTMLInputElement> | { target: { value: string } },
+  field: string
+) => {
+  if (editedTask) {
+    setEditedTask({
+      ...editedTask,
+      [field]: field === "estimatedTime" || field === "priority" ? Number(e.target.value) : e.target.value
+    });
+  }
+};
+
+const handleDeleteTask = async (id: string | number) => {
+  try {
+    await axios.delete(API_ENDPOINTS.DELETE_TASK(Number(id)));
+    setTasks(tasks.filter(task => task.id !== Number(id)));
+  } catch (error) {
+    console.error("Failed to delete task:", error);
+    setServerError("タスクの削除に失敗しました");
+  }
+};
+
+  // progressPercentageを計算
+  useEffect(() => {
+    const calculatedProgress = totalTime > 0 ? (status / totalTime) * 100 : 0;
+    const roundedProgress = Math.min(100, Math.max(0, Math.round(calculatedProgress)));
+    setValue("progressPercentage", roundedProgress);
+    console.log("Calculated progress:", roundedProgress); // デバッグ用
+  }, [totalTime, status, setValue]);
+
+  useEffect(() => {
+    console.log("chatResponse updated:", chatResponse);
+    if (chatResponse.length > 0) {
+      const transformedTasks = chatResponse.map((task, index) => ({
+        id: index + 1,
+        name: task.name,
+        estimatedTime: task.estimatedTime,
+        priority: task.priority,
+        order: index + 1,
+        userId: task.userId,
+        goalId: task.goalId,
+        description: task.description,
+        elapsedTime: task.elapsedTime,
+        reviewInterval: task.reviewInterval || 0,
+        repetitionCount: task.repetitionCount || 0,
+        lastNotificationSent: task.lastNotificationSent || null,
+        createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+        updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
+      }));
+      setTasks(transformedTasks);
     }
-  };
-
-  const handleDeleteTask = async (id: number) => {
-    try {
-      await axios.delete(API_ENDPOINTS.DELETE_TASK(id));
-      setTasks(tasks.filter(task => task.id !== id));
-    } catch (error) {
-      console.error("Failed to delete task:", error);
-      setServerError("タスクの削除に失敗しました");
+  }, [chatResponse]);
+  
+  useEffect(() => {
+    console.log("tasks updated:", tasks);
+  }, [tasks]);
+  
+  useEffect(() => {
+    if (chatResponse.length > 0 && tasks.length === 0) {
+      setTasks(chatResponse);
     }
-  };
-
-
-
-
-
+  }, [chatResponse, tasks]);
 
   /**
    * 新しい目標を作成し、AIを使用して関連タスクを生成する
@@ -230,27 +256,30 @@ const Goal: React.FC = () => {
   //onSubmit関数の定義
   const onSubmit = async (data: Goal) => {
     console.log("onSubmit関数が呼び出されました", data);
-    console.log("Current userId:", userId);  // この行を追加
+    console.log("Current userId:", userId);
     if (!userId) {
       setServerError("ユーザーIDが見つかりません。ログインしてください。");
       return;
     }
+  
+    // if (data.totalTime === 0) {
+    //   setServerError("総予定時間は必須です");
+    //   return;
+    // }
 
     console.log("onSubmit関数が呼び出されました");
-    //送信データの作成
     const submissionData = {
-      ...data,
       name: data.name,
       user_id: Number(userId),
-      goalId: selectedGoal?.id,
+      current_status: data.currentStatus,
+      period_start: data.periodStart,
+      period_end: data.periodEnd,
       description: data.description,
-      estimated_time: data.estimated_time,
-      priority: data.priority,
-      period_start: data.period_start,
-      period_end: data.period_end,
-      current_status: data.current_status,
-      status: data.status,
+      status: data.status || 0,
+      total_time: data.totalTime || 0,
+      progress_percentage: data.progressPercentage || 0,
     };
+  
 
     console.log("送信データ:", JSON.stringify(submissionData, null, 2));
 
@@ -258,27 +287,23 @@ const Goal: React.FC = () => {
     try {
       setIsLoading(true);
       setServerError(null);
-      console.log("axios.postを呼び出します");
-      const result: any = await axios.post(
+      const result = await axios.post(
         API_ENDPOINTS.CREATE_GOAL,
         submissionData,
         {
-          headers: {
-            "Content-Type": "application/json",
-          },
-          withCredentials: true, // CORSの問題を回避するために追加
+          headers: { "Content-Type": "application/json" },
+          withCredentials: true,
         }
       );
-      console.log("APIレスポンス:", result.data);
+      console.log("サーバーレスポンス:", result.data);
       setResponse(result.data.message);
-      console.log(result.data.Goals.id);
-
+  
       const goalId = result.data.Goals.id;
       if (!goalId) {
         throw new Error("goalId is undefined");
       }
       await axios.get('/sanctum/csrf-cookie');
-
+  
       const chatResult: any = await axios.post(
         API_ENDPOINTS.CHAT_GOAL(goalId),
         {
@@ -292,22 +317,20 @@ const Goal: React.FC = () => {
         }
       );
       console.log("Sending chat request:", API_ENDPOINTS.CHAT_GOAL(goalId));
-
+  
       let parsedChatResponse;
       try {
         const cleanedResponse = chatResult.data.response
           .replace(/```json|```/g, "")
           .trim();
         parsedChatResponse = JSON.parse(cleanedResponse);
-
-        // 総時間を計算し、状態を更新
-        const newTotalTime = parsedChatResponse.reduce((sum, task) => sum + task.estimatedTime, 0);
-        setValue("total_time", newTotalTime);
-
-        // 進捗状況を再計算
-        const newStatus = await calculateStatus();
-        setValue("status", newStatus);
-        setValue("progress_percentage", newStatus);
+  
+        const newTotalTime = parsedChatResponse.reduce((sum: number, task: Task) => sum + task.estimatedTime, 0);
+        setValue("totalTime", newTotalTime);
+  
+        // const newStatus = await calculateStatus();
+        // setValue("status", newStatus);
+        // setValue("progressPercentage", newStatus);
       } catch (error) {
         handleError(error);
         console.error("エラー:", error);
@@ -318,15 +341,20 @@ const Goal: React.FC = () => {
       } finally {
         setIsLoading(false);
       }
+  
 
       setChatResponse(parsedChatResponse);
       console.log("chatResponse:", chatResponse);
       await fetchGoals();
       reset();
     } catch (error) {
-      handleError(error);
-      console.error("エラー:", error);
-      setResponse("エラーが発生しました");
+      if (axios.isAxiosError(error) && error.response) {
+        console.error("Axios error response:", error.response.data);
+        setServerError(`エラー: ${error.response.data.message || 'Unknown error'}`);
+      } else {
+        console.error("Non-Axios error:", error);
+        setServerError("未知のエラーが発生しました");
+      }
     } finally {
       setIsLoading(false);
     }
@@ -353,10 +381,10 @@ const Goal: React.FC = () => {
     const selectedDate = new Date(value);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
+  
     if (selectedDate < today) {
       setValue(
-        name as "period_start" | "period_end",
+        name as "periodStart" | "periodEnd",
         today.toISOString().split("T")[0]
       );
     }
@@ -372,13 +400,13 @@ const Goal: React.FC = () => {
       setSelectedGoal(goal);
       reset({
         ...goal,
-        period_start: formatDate(goal.period_start),
-        period_end: formatDate(goal.period_end),
+        periodStart: formatDate(goal.periodStart),
+        periodEnd: formatDate(goal.periodEnd),
       });
-
+  
       try {
-        const response = await axios.get(API_ENDPOINTS.GOAL_TASKS(goal.id));
-        setTasks(response.data.tasks as Task[]);
+        const response = await axios.get<{ tasks: Task[] }>(API_ENDPOINTS.GOAL_TASKS(goal.id));
+        setTasks(response.data.tasks);
         console.log("Submitted goalId:", response);
       } catch (error) {
         console.error("Failed to fetch tasks:", error);
@@ -387,7 +415,7 @@ const Goal: React.FC = () => {
     },
     [reset]
   );
-
+  
   /**
    * 日付文字列をYYYY-MM-DD形式にフォーマットする
    * @param {string} dateString - フォーマットする日付文字列
@@ -423,6 +451,7 @@ const Goal: React.FC = () => {
     },
     [selectedGoal, setServerError, setTasks]
   );
+  
 
   /**
    * 指定されたIDの目標を削除する
@@ -437,15 +466,13 @@ const Goal: React.FC = () => {
     }
     try {
       await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
-      // await fetchGoals();
       setGoals(goals.filter((goal) => goal.id !== id));
-      // onGoalDelete(id);
       if (selectedGoal && selectedGoal.id === id) {
         setSelectedGoal(null);
         reset({});
       }
     } catch (error) {
-      console.error("Faile to delete goal:", error);
+      console.error("Failed to delete goal:", error);
       setServerError("目標の削除に失敗しました");
     }
   };
@@ -460,7 +487,7 @@ const Goal: React.FC = () => {
       await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
       setGoals(goals.filter((goal) => goal.id !== id));
     } catch (error) {
-      console.error("Faile to delete goal:", error);
+      console.error("Failed to delete goal:", error);
       setServerError("目標の削除に失敗しました");
     }
   };
@@ -488,39 +515,54 @@ const Goal: React.FC = () => {
       throw error;
     }
   };
-
   /**
    * エラーを処理し、適切なエラーメッセージを設定する
    * @param {unknown} error - 処理するエラーオブジェクト
    */
   const handleError = (error: unknown) => {
-    if (error instanceof axios.AxiosError) {
-      // Axios のエラーの場合
+    if (axios.isAxiosError(error)) {
       const axiosError = error as AxiosError;
       const errorMessage =
         axiosError.response?.data?.message || axiosError.message;
       console.error("Axios エラー:", errorMessage);
       setServerError(errorMessage);
     } else if (error instanceof Error) {
-      // 一般的な Error オブジェクトの場合
       console.error("エラー:", error.message);
       setServerError(error.message);
     } else {
-      // その他の未知のエラーの場合
       console.error("未知のエラー:", error);
       setServerError("未知のエラーが発生しました");
     }
   };
-
+  
 
   useEffect(() => {
     console.log("chatResponse updated:", chatResponse);
+    if (chatResponse.length > 0) {
+      const transformedTasks = chatResponse.map((task, index) => ({
+        id: index + 1,
+        name: task.name,
+        estimatedTime: task.estimatedTime,
+        priority: task.priority,
+        order: index + 1,
+        userId: task.userId,
+        goalId: task.goalId,
+        description: task.description,
+        elapsedTime: task.elapsedTime,
+        reviewInterval: task.reviewInterval || 0,
+        repetitionCount: task.repetitionCount || 0,
+        lastNotificationSent: task.lastNotificationSent || null,
+        createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+        updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
+      }));
+      setTasks(transformedTasks);
+    }
   }, [chatResponse]);
-
+  
   useEffect(() => {
     console.log("tasks updated:", tasks);
   }, [tasks]);
-
+  
   useEffect(() => {
     if (chatResponse.length > 0 && tasks.length === 0) {
       setTasks(chatResponse);
@@ -556,24 +598,33 @@ const Goal: React.FC = () => {
     setEditingId(task.id.toString());  // number を string に変換
     setEditedTask({ ...task });
   };
-
+  
   if (errorMessage) {
     return <div>{errorMessage}</div>;  // エラーメッセージを表示
   }
-
+  
   if (!userId) {
     return <div>Loading...</div>;  // ユーザーIDがまだ取得されていない場合
   }
 
-  const transformTasks = (tasks: any[]): Task[] => {
-    return tasks.map((task, index) => ({
-      id: index + 1, // 一意のIDを生成
-      name: task.taskName,
-      estimatedTime: task.taskTime,
-      priority: task.taskPriority,
-      order: index + 1
-    }));
-  };
+const transformTasks = (tasks: any[]): Task[] => {
+  return tasks.map((task, index) => ({
+    id: index + 1,
+    name: task.taskName,
+    estimatedTime: task.taskTime,
+    priority: task.taskPriority,
+    order: index + 1,
+    userId: task.userId,
+    goalId: task.goalId,
+    description: task.description,
+    elapsedTime: task.elapsedTime,
+    reviewInterval: task.reviewInterval || 0,
+    repetitionCount: task.repetitionCount || 0,
+    lastNotificationSent: task.lastNotificationSent || null,
+    createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+    updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
+  }));
+};
 
   console.log("Validation errors:", errors);
   console.log("chatResponse:", chatResponse);
@@ -583,25 +634,15 @@ const Goal: React.FC = () => {
     <section className="section">
       <h1 className="h1">近い未来の目標</h1>
       <form onSubmit={handleSubmit(onSubmit)}>
-          <div className="my-5">
-            <Label htmlFor="name" className="w-full block text-left">
-              目標
-            </Label>
-            {/* <label htmlFor="goal" className="textleft w-full block text-left">目標</label> */}
-            <Textarea
-              className=""
-              id="name"
-              {...register("name", {
-                required: "目標は必須です",
-              })}
-            />
-            {errors.name && (
-              <p className="text-red-600 text-left">
-                {errors.name.message as React.ReactNode}
-              </p>
-            )}
-            {console.log("Name field error:", errors.name)}
-          </div>
+      <div className="my-5">
+          <Label htmlFor="name" className="w-full block text-left">目標</Label>
+          <Textarea
+            id="name"
+            {...register("name", { required: "目標名は必須です" })}
+          />
+          {errors.name && <p className="text-red-600 text-left">{errors.name.message}</p>}
+        </div>
+
           <div className="my-5">
             <Label
               htmlFor="currentSituation"
@@ -612,155 +653,132 @@ const Goal: React.FC = () => {
             <Input
               type="text"
               className=""
-              id="current_status"
-              {...register("current_status", {
+              id="currentStatus"
+              {...register("currentStatus", {
                 required: "現状は必須です",
               })}
             />
-            {errors.current_status && (
+            {errors.currentStatus && (
               <p className="text-red-600 text-left">
-                {errors.current_status.message as React.ReactNode}
+                {errors.currentStatus.message as React.ReactNode}
               </p>
             )}
           </div>
           <div className="my-5">
-            <Label
-              htmlFor="period_start"
-              className="textleft w-full block text-left"
-            >
-              目標期間（開始日）
-            </Label>
-            <Input
-              id="period_start"
-              className="my-2"
-              type="date"
-              {...register("period_start", {
-                required: "目標期間の開始日は必須です",
-                validate: validateDate,
-              })}
-              onChange={handleDateChange}
-            />
-            {errors.period_start && (
-              <p className="text-red-600 text-left">
-                {errors.period_start.message}
-              </p>
-            )}
-          </div>
-          <div className="my-5">
-            <Label
-              htmlFor="period_end"
-              className="textleft w-full block text-left"
-            >
-              目標期間（修了日）
-            </Label>
-            <Input
-              id="period_end"
-              className="my-2"
-              type="date"
-              {...register("period_end", {
-                required: "目標期間の終了日は必須です",
-                validate: validateDate,
-              })}
-              onChange={handleDateChange}
-            />
-            {errors.period_end && (
-              <p className="text-red-600 text-left">
-                {errors.period_end.message}
-              </p>
-            )}
-          </div>
-          <div className="my-5">
-            <Label htmlFor="description" className="w-full block text-left">
-              詳細
-            </Label>
-            <Textarea
-              id="description"
-              {...register("description")}
-            />
-          </div>
+      <Label
+        htmlFor="periodStart"
+        className="textleft w-full block text-left"
+      >
+        目標期間（開始日）
+      </Label>
+      <Input
+        id="periodStart"
+        className="my-2"
+        type="date"
+        {...register("periodStart", {
+          required: "目標期間の開始日は必須です",
+          validate: validateDate,
+        })}
+        onChange={handleDateChange}
+      />
+      {errors.periodStart && (
+        <p className="text-red-600 text-left">
+          {errors.periodStart.message}
+        </p>
+      )}
+    </div>
+    <div className="my-5">
+      <Label
+        htmlFor="periodEnd"
+        className="textleft w-full block text-left"
+      >
+        目標期間（修了日）
+      </Label>
+      <Input
+        id="periodEnd"
+        className="my-2"
+        type="date"
+        {...register("periodEnd", {
+          required: "目標期間の終了日は必須です",
+          validate: validateDate,
+        })}
+        onChange={handleDateChange}
+      />
+      {errors.periodEnd && (
+        <p className="text-red-600 text-left">
+          {errors.periodEnd.message}
+        </p>
+      )}
+    </div>
+    <div className="my-5">
+      <Label htmlFor="description" className="w-full block text-left">
+        詳細
+      </Label>
+      <Textarea
+        id="description"
+        {...register("description")}
+      />
+    </div>
 
-          <div className="my-5">
-            <Label htmlFor="status" className="w-full block text-left">
-              進捗状況 (%)
-            </Label>
-            <Input
-              type="number"
-              id="status"
-              {...register("status")}
-              readOnly // ユーザーによる編集を防ぐ
-            />
-          </div>
-
-          <div className="my-5">
-            <Label htmlFor="total_time" className="w-full block text-left">
-              総予定時間 (時間)
-            </Label>
-            <Input
-              type="number"
-              id="total_time"
-              {...register("total_time")}
-              readOnly // ユーザーによる編集を防ぐ
-            />
-
-            {serverError && (
-              <Alert variant="destructive">
-                <AlertDescription>{serverError}</AlertDescription>
-              </Alert>
-            )}
-          </div>
-          <div className="my-5">
-            <Button type="submit" className="button" disabled={isLoading}>
-              {isLoading ? "送信中..." : "目標を設定"}
-            </Button>
-          </div>
-        </form>
-        {isLoading && <div className="loading">処理中...</div>}
-        {response && (
-          <div className="mt-4">
-            <p className="text-green-600">{response}</p>
-          </div>
-        )}
+    <div className="my-5">
+      <Button type="submit" className="button" disabled={isLoading}>
+        {isLoading ? "送信中..." : "目標を設定"}
+      </Button>
+    </div>
+  </form>
+  {serverError && (
+    <Alert variant="destructive">
+      <AlertDescription>{serverError}</AlertDescription>
+    </Alert>
+  )}
+  {isLoading && <div className="loading">処理中...</div>}
+  {response && (
+    <div className="mt-4">
+      <p className="text-green-600">{response}</p>
+    </div>
+  )}
         {tasks.length > 0 ? ( 
 
-        <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-          <table className="min-w-full bg-white">
-            <thead>
-              <tr>
-                <th className="border px-4 py-2">順序</th>
-                <th className="border px-4 py-2">タスク名</th>
-                <th className="border px-4 py-2">所要時間</th>
-                <th className="border px-4 py-2">優先度</th>
-                <th className="border px-4 py-2">アクション</th>
-              </tr>
-            </thead>
-            <tbody>
-              {tasks.map((task) => (
-                <SortableItem
-                  key={task.id || index}
-                  id={task.id}
-                  task={task}
-                  index={task.order - 1}
-                  editingId={editingId}
-                  editedTask={editedTask}
-                  handleEdit={handleEdit}
-                  handleSave={handleSave}
-                  handleChange={handleChange}
-                  handleDeleteTask={handleDeleteTask}
-                />
-              ))}
-            </tbody>
-          </table>
-        </SortableContext>
+<SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+<table className="min-w-full bg-white">
+  <thead>
+    <tr>
+      <th className="border px-4 py-2">順序</th>
+      <th className="border px-4 py-2">タスク名</th>
+      <th className="border px-4 py-2">所要時間</th>
+      <th className="border px-4 py-2">優先度</th>
+      <th className="border px-4 py-2">アクション</th>
+    </tr>
+  </thead>
+  <tbody>
+  {tasks.map((task, index) => (
+      <SortableItem
+        key={task.id || index}
+        id={task.id}
+        task={task}
+        index={task.order - 1}
+        editingId={editingId}
+        editedTask={editedTask}
+        handleEdit={handleEdit}
+        handleSave={handleSave}
+        handleChange={handleChange}
+        handleDeleteTask={handleDeleteTask}
+      />
+    ))}
+  </tbody>
+</table>
+</SortableContext>
 
-        ) : (
-          <p>タスクがありません。または読み込み中です。</p>
-        )}
-      </section>
-      <Link to="/goallist">
-        <Button>目標一覧を見る</Button>
-      </Link>
-    </>
-  );
+) : (
+  <p>タスクがありません。または読み込み中です。</p>
+)}
+
+</section>
+<Link to="/goallist">
+<Button>目標一覧を見る</Button>
+</Link>
+</>
+);
 };
 
 export default Goal;

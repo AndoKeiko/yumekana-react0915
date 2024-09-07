@@ -31,9 +31,33 @@ export interface SortableItemProps {
   handleDeleteTask: (id: string | number) => void;
 }
 
+export type UserType = {
+  id: number;
+  name: string;
+  email: string;
+  // 他のフィールド
+};
+
 export interface GoalItem {
   goalId: number;
   user_id: string;
+  goal: string;
+  currentSituation: string;
+  targetPeriodStart: string;
+  targetPeriodEnd: string;
+}
+
+export interface GoalsListProps {
+  goals: GoalItem[];
+  onGoalSelect: (goal: GoalItem) => Promise<void>;
+  onGoalDelete: (id: number) => Promise<void>;
+  selectedGoal: GoalItem | null; // ここにselectedGoalを追加
+  serverError: string | null; // serverError を追加
+}
+
+export interface GoalItem {
+  goalId: number;
+  userId: string;
   goal: string;
   currentSituation: string;
   targetPeriodStart: string;
@@ -57,13 +81,34 @@ export interface Task {
   updatedAt: string;
 }
 
+export interface ScheduleProps {
+  events: Array<{
+    start: Date;
+    end: Date;
+    title: string;
+  }>;
+}
+export interface LoginResponse {
+  access_token: string;
+  token_type: string;
+  expires_in: number;
+  // 他のプロパティがあればここに追加
+}
+export type RegisterForm = {
+  name: string;
+  nickname: string;
+  email: string;
+  password: string;
+  password_confirmation: string;
+};
+
 export interface User {
   id: number;
   name: string;
   nickname: string | null;
   email: string;
   password: string | null;
-  user_id: string | null;
+  userId: string | null;
   avatar: string | null;
   email_verified_at: string | null;
   created_at: string;
@@ -72,44 +117,31 @@ export interface User {
 
 export interface Goal {
   id: number;
-  user_id: number;
+  userId: number;
   name: string;
-  current_status: string | null;
-  period_start: string; // 'YYYY-MM-DD'形式
-  period_end: string; // 'YYYY-MM-DD'形式
+  currentStatus: string | null;
+  periodStart: string; // 'YYYY-MM-DD'形式
+  periodEnd: string; // 'YYYY-MM-DD'形式
   description: string | null;
   status: number;
-  total_time: number; 
-  progress_percentage: number;
+  totalTime: number;
+  progressPercentage: number;
   created_at: string;
   updated_at: string;
+  estimatedTime?: number; // ここに追加
+  priority?: number; // ここに追加
 }
 
-export interface Task {
-  id: number;
-  user_id: number;
-  goal_id: number;
-  name: string;
-  description: string | null;
-  elapsed_time: number;
-  estimated_time: number;
-  priority: number;
-  order: number;
-  review_interval: 'next_day' | '7_days' | '14_days' | '28_days' | '56_days' | 'completed';
-  repetition_count: number;
-  last_notification_sent: string | null;
-  created_at: string;
-  updated_at: string;
-}
+
 
 export interface DailyHistory {
   id: number;
-  user_id: number;
-  task_id: number;
+  userId: number;
+  taskId: number;
   date: string; // 'YYYY-MM-DD'形式
-  study_time: number;
-  start_time: string;
-  end_time: string;
+  studyTime: number;
+  startTime: string;
+  endTime: string;
   notes: string | null;
   created_at: string;
   updated_at: string;

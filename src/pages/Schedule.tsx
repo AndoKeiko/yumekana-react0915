@@ -1,10 +1,11 @@
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+import {ScheduleProps} from '@/Types/index';
 
 const localizer = momentLocalizer(moment);
 
-const Schedule = ({ events }) => {
+const Schedule = ({ events }: ScheduleProps) => {
   return (
     <Calendar
     localizer={localizer}

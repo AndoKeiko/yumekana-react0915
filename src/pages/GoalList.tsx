@@ -6,23 +6,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { API_ENDPOINTS } from "@/config/api";
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
+import { GoalItem, GoalsListProps } from "@/Types";
 
-interface GoalItem {
-  goalId: number;
-  user_id: string;
-  goal: string;
-  currentSituation: string;
-  targetPeriodStart: string;
-  targetPeriodEnd: string;
-}
-
-interface GoalsListProps {
-  goals: GoalItem[];
-  onGoalSelect: (goal: GoalItem) => Promise<void>;
-  onGoalDelete: (id: number) => Promise<void>;
-  selectedGoal: GoalItem | null;
-  serverError: string | null; // serverError を追加
-}
 
 const GoalsList: React.FC<GoalsListProps> = ({
   onGoalSelect,

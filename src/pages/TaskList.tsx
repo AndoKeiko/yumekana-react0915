@@ -18,6 +18,8 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import SortableItem from './SortableItem';
 import Schedule from './Schedule';
 import type { Task } from "@/Types/index";
+import moment from 'moment';
+import axios from "axios";
 
 interface SortConfig {
   key: keyof Task | null;
@@ -30,6 +32,7 @@ interface TaskListProps {
   onSaveTasks: (tasks: Task[]) => Promise<void>;
   existingTasks: Task[];
   chatResponse: Task[];
+  handleDeleteTask: (id: string | number) => void;
 }
 
 const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, existingTasks, chatResponse }) => {
@@ -38,7 +41,12 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'ascending' });
-  const [isLoading, setIsLoading] = useState<boolean>(false);
+  const [isLoading] = useState<boolean>(false);
+
+  const isAxiosError = (error: unknown): error is AxiosError => {
+    return axios.isAxiosError(error);
+  };
+
   const sensors = useSensors(
     useSensor(PointerSensor),
     useSensor(KeyboardSensor, {
@@ -49,11 +57,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
   const combinedTasks = useMemo(() => {
     const allTasks = [...existingTasks, ...chatResponse];
     const uniqueTasks = allTasks.reduce((acc, current) => {
-      const x = acc.find(item => item.taskName === current.taskName);
+      const x = acc.find(item => item.name === current.name);
       if (!x) {
         return acc.concat([current]);
       } else {
-        return acc.map(item => item.taskName === current.taskName ? current : item);
+        return acc.map(item => item.name === current.name ? current : item);
       }
     }, [] as Task[]);
     return uniqueTasks;
@@ -63,10 +71,16 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
     let sortableTasks = [...combinedTasks];
     if (sortConfig.key !== null) {
       sortableTasks.sort((a, b) => {
-        if (a[sortConfig.key!] < b[sortConfig.key!]) {
+        const aValue = a[sortConfig.key!];
+        const bValue = b[sortConfig.key!];
+        
+        if (aValue == null || bValue == null) {
+          return 0; // null 値の場合は同じとみなす
+        }
+        if (aValue < bValue) {
           return sortConfig.direction === "ascending" ? -1 : 1;
         }
-        if (a[sortConfig.key!] > b[sortConfig.key!]) {
+        if (aValue > bValue) {
           return sortConfig.direction === "ascending" ? 1 : -1;
         }
         return 0;
@@ -98,19 +112,25 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
     }
   };
   const handleEdit = (task: Task) => {
-    setEditingId(task.taskId);  // 編集中のタスクIDを設定
+    setEditingId(task.id.toString());  // 編集中のタスクIDを設定
     setEditedTask({ ...task }); // 編集するタスクをコピーして設定
   };
 
-  const handleSave = (taskId: string) => {
-    // 保存のロジックを実装
+  const handleSave = (id: string | number) => { // 修正済み
+    if (editedTask) {
+      setTasks((prevTasks) =>
+        prevTasks.map((task) =>
+          task.id === id ? { ...task, ...editedTask } : task
+        )
+      );
+    }
     setEditingId(null);
     setEditedTask(null);
   };
 
   const handleChange = (
-    e: React.ChangeEvent<HTMLInputElement> | { target: { value: string } },
-    field: keyof Task
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, // 修正済み
+    field: string // 修正済み
   ) => {
     if (editedTask) {
       setEditedTask({
@@ -120,9 +140,9 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
     }
   };
 
-  const handleDeleteTask = (taskId: string) => {
+  const handleDeleteTask = (taskId: string | number) => {
     const updatedTasks = chatResponse.filter((task) => task.id !== taskId);
-    setChatResponse(updatedTasks);
+    setTasks(updatedTasks);
   };
 
   const handleSaveAll = async () => {
@@ -136,23 +156,31 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
       setTasks(updatedTasks);
     } catch (error) {
       console.error("Failed to save tasks:", error);
-      if (axios.isAxiosError(error) && error.response) {
+      if (isAxiosError(error) && error.response) {
         setErrorMessage("タスクの保存中にエラーが発生しました。");
       } else {
         setErrorMessage("予期せぬエラーが発生しました。");
       }
     }
   };
+  const handleScheduleReflection = (tasks: Task[]) => {
+    return tasks.map(task => ({
+      taskId: task.id,
+      date: moment().format('YYYY-MM-DD'),
+      hours: 1 // 仮の値
+    }));
+  };
+  
   const handleReflectSchedule = () => {
     const generatedSchedule = handleScheduleReflection(tasks);
     
-    const calendarEvents = generatedSchedule.map((item) => {
+    const calendarEvents = generatedSchedule.map((item: { taskId: string | number; date: string; hours: number }) => { 
       const task = tasks.find(t => t.id === item.taskId);
       const startTime = moment(item.date).hour(9).toDate();
       const endTime = moment(startTime).add(item.hours, 'hours').toDate();
       
       return {
-        title: task ? task.taskName : `Task ${item.taskId}`,
+        title: task ? task.name : `Task ${item.taskId}`,
         start: startTime,
         end: endTime,
       };
@@ -174,24 +202,24 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
         onDragEnd={handleDragEnd}
       >
         <SortableContext 
-          items={sortedTasks.map(t => t.taskId)}
+          items={sortedTasks.map(t => t.id)}
           strategy={verticalListSortingStrategy}
         >
           <table className="min-w-full bg-white">
             <thead>
               <tr>
                 <th className="border px-4 py-2">順序</th>
-                <th className="border px-4 py-2">タスク名<button onClick={() => requestSort("taskName")}>▲▼</button></th>
-                <th className="border px-4 py-2">所要時間<button onClick={() => requestSort("taskTime")}>▲▼</button></th>
-                <th className="border px-4 py-2">優先度<button onClick={() => requestSort("taskPriority")}>▲▼</button></th>
+                <th className="border px-4 py-2">タスク名<button onClick={() => requestSort("name")}>▲▼</button></th>
+                <th className="border px-4 py-2">所要時間<button onClick={() => requestSort("elapsedTime")}>▲▼</button></th>
+                <th className="border px-4 py-2">優先度<button onClick={() => requestSort("priority")}>▲▼</button></th>
                 <th className="border px-4 py-2">アクション</th>
               </tr>
             </thead>
             <tbody>
               {sortedTasks.map((task, index) => (
                 <SortableItem
-                  key={task.taskId}
-                  id={task.taskId}
+                   key={task.id}
+                  id={task.id}
                   task={task as Task}
                   index={index}
                   editingId={editingId}

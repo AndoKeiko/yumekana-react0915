@@ -5,8 +5,8 @@ import { loginStart, loginSuccess, loginFailure } from '../../store/authSlice';
 import { useForm } from "react-hook-form";
 import api from '../../api/axios';
 import { API_ENDPOINTS } from "@/config/api";
-import type { LoginForm, LoginSuccessPayload, LoginResponse } from "@/Types/index";
-import axios, { AxiosError } from 'axios';
+import type { LoginForm, LoginResponse } from "@/Types/index";
+import axios from 'axios';
 
 
 const Login: React.FC = () => {
@@ -37,14 +37,13 @@ const Login: React.FC = () => {
 
     try {
       const response = await api.post<LoginResponse>(API_ENDPOINTS.LOGINURL, data);
-      const { access_token, token_type, expires_in } = response.data;
-      dispatch(loginSuccess({ token: access_token, user: null })); // userデータは別途取得する必要があります
-      localStorage.setItem('token', access_token);
+      const { access_token, token_type, user } = response.data;
+      dispatch(loginSuccess({ token: access_token, userId: user.id.toString() }));
       api.defaults.headers.common['Authorization'] = `${token_type} ${access_token}`;
       navigate('/goals');
-    } catch (error) {
+    } catch (error: any) { 
       let errorMessage = 'ログインに失敗しました。もう一度お試しください。';
-      if (error instanceof AxiosError) {
+      if (error.isAxiosError) {
         if (error.response) {
           switch (error.response.status) {
             case 401:

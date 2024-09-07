@@ -8,7 +8,6 @@ import type { SortableItemProps } from "@/Types/index";
 const SortableItem: React.FC<SortableItemProps> = ({
   id,
   task,
-  index,
   editingId,
   editedTask,
   handleEdit,

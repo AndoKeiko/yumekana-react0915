@@ -1,12 +1,12 @@
-import React, { useState,useEffect  } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setAuth, setUser } from '../../store/authSlice';
 import { useForm } from "react-hook-form";
 import api from '../../api/axios';
 import { API_ENDPOINTS } from "@/config/api";
-import type { RegisterForm } from "@/Types/index";
-import { AxiosError } from 'axios';
+import type { RegisterForm, UserType } from "@/Types/index";
+import axios, { AxiosError } from 'axios';
 
 
 const Register: React.FC = () => {
@@ -30,7 +30,7 @@ const Register: React.FC = () => {
   const onSubmit = async (data: RegisterForm) => {
     setRegisterError(null);
     try {
-      const response = await api.post(API_ENDPOINTS.REGISTER, data);
+      const response = await api.post<{ user: UserType, token: string }>(API_ENDPOINTS.REGISTER, data);
       dispatch(setAuth(true));
       dispatch(setUser(response.data.user));
       localStorage.setItem('token', response.data.token);
@@ -39,7 +39,7 @@ const Register: React.FC = () => {
     } catch (error) {
       let errorMessage = '登録に失敗しました。もう一度お試しください。';
       if (error instanceof AxiosError) {
-        if (error.response) {
+        if (error.response && error.response.data) {
           if (error.response.data.errors) {
             // バリデーションエラーの詳細を表示
             errorMessage = Object.values(error.response.data.errors).flat().join(', ');
