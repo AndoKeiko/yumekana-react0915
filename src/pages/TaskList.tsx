@@ -42,6 +42,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'ascending' });
   const [isLoading] = useState<boolean>(false);
+  const [desiredGoalId, setDesiredGoalId] = useState<string | null>(null);
 
   const isAxiosError = (error: unknown): error is AxiosError => {
     return axios.isAxiosError(error);
@@ -57,11 +58,12 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
   const combinedTasks = useMemo(() => {
     const allTasks = [...existingTasks, ...chatResponse];
     const uniqueTasks = allTasks.reduce((acc, current) => {
-      const x = acc.find(item => item.name === current.name);
+      const x = acc.find(item => item.taskName === current.taskName);
+      const taskWithGoalId = { ...current, goalId: current.goal_id };
       if (!x) {
-        return acc.concat([current]);
+        return acc.concat([taskWithGoalId]);
       } else {
-        return acc.map(item => item.name === current.name ? current : item);
+        return acc.map(item => item.taskName === current.taskName ? current : item);
       }
     }, [] as Task[]);
     return uniqueTasks;
@@ -73,7 +75,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
       sortableTasks.sort((a, b) => {
         const aValue = a[sortConfig.key!];
         const bValue = b[sortConfig.key!];
-        
+
         if (aValue == null || bValue == null) {
           return 0; // null 値の場合は同じとみなす
         }
@@ -170,17 +172,17 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
       hours: 1 // 仮の値
     }));
   };
-  
+
   const handleReflectSchedule = () => {
     const generatedSchedule = handleScheduleReflection(tasks);
-    
-    const calendarEvents = generatedSchedule.map((item: { taskId: string | number; date: string; hours: number }) => { 
+
+    const calendarEvents = generatedSchedule.map((item: { taskId: string | number; date: string; hours: number }) => {
       const task = tasks.find(t => t.id === item.taskId);
       const startTime = moment(item.date).hour(9).toDate();
       const endTime = moment(startTime).add(item.hours, 'hours').toDate();
-      
+
       return {
-        title: task ? task.name : `Task ${item.taskId}`,
+        title: task ? task.taskName : `Task ${item.taskId}`,
         start: startTime,
         end: endTime,
       };
@@ -196,12 +198,12 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
   }
   return (
     <div>
-      <DndContext 
+      <DndContext
         sensors={sensors}
         collisionDetection={closestCenter}
         onDragEnd={handleDragEnd}
       >
-        <SortableContext 
+        <SortableContext
           items={sortedTasks.map(t => t.id)}
           strategy={verticalListSortingStrategy}
         >
@@ -209,41 +211,44 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
             <thead>
               <tr>
                 <th className="border px-4 py-2">順序</th>
-                <th className="border px-4 py-2">タスク名<button onClick={() => requestSort("name")}>▲▼</button></th>
-                <th className="border px-4 py-2">所要時間<button onClick={() => requestSort("elapsedTime")}>▲▼</button></th>
-                <th className="border px-4 py-2">優先度<button onClick={() => requestSort("priority")}>▲▼</button></th>
+                <th className="border px-4 py-2">タスク名<button onClick={() => requestSort("taskName")}>▲▼</button></th>
+                <th className="border px-4 py-2">所要時間<button onClick={() => requestSort("taskTime")}>▲▼</button></th>
+                <th className="border px-4 py-2">優先度<button onClick={() => requestSort("tasktaskPriority")}>▲▼</button></th>
                 <th className="border px-4 py-2">アクション</th>
               </tr>
             </thead>
             <tbody>
-              {sortedTasks.map((task, index) => (
-                <SortableItem
-                   key={task.id}
-                  id={task.id}
-                  task={task as Task}
-                  index={index}
-                  editingId={editingId}
-                  editedTask={editedTask}
-                  handleEdit={handleEdit}
-                  handleSave={handleSave}
-                  handleChange={handleChange}
-                  handleDeleteTask={handleDeleteTask}
-                />
-              ))}
+              {sortedTasks
+                .filter(task => desiredGoalId === null || task.goal_id === Number(desiredGoalId))  // goal_idで絞り込み
+                .map((task, index) => (
+                  <SortableItem
+                    key={task.id}  // keyはtask.idを使用
+                    id={task.id}  // idもtask.idを使用
+                    task={task as Task}
+                    index={index}
+                    editingId={editingId}
+                    editedTask={editedTask}
+                    handleEdit={handleEdit}
+                    handleSave={handleSave}
+                    handleChange={handleChange}
+                    handleDeleteTask={handleDeleteTask}
+                    goalId={task.goal_id}  // goalIdを追加
+                  />
+                ))}
             </tbody>
           </table>
         </SortableContext>
       </DndContext>
-      
+
       {errorMessage && (
         <Alert variant="destructive">
           <AlertDescription>{errorMessage}</AlertDescription>
         </Alert>
       )}
-      
+
       <Button onClick={handleSaveAll} className="mt-6">全ての変更を保存</Button>
       <Button onClick={handleReflectSchedule} className="mt-6 ml-4">スケジュールに反映</Button>
-      
+
       {events.length > 0 && (
         <div className="mt-4">
           <h3>生成されたスケジュール:</h3>

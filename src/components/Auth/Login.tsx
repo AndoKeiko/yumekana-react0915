@@ -95,7 +95,7 @@ const Login: React.FC = () => {
           {errors.email && <span className="text-red-600 text-sm">{errors.email.message as string}</span>}
         </div>
         <div className="mb-6">
-          <label htmlFor="password" className="block text-sm font-medium text-gray-700">パスワード</label>
+          <label htmlFor="password" autoComplete="current-password" className="block text-sm font-medium text-gray-700">パスワード</label>
           <input
             {...register("password", {
               required: "パスワードは必須です",
@@ -126,6 +126,7 @@ const Login: React.FC = () => {
            新規登録
          </Link>
        </div>
+
      </div>
    );
  };

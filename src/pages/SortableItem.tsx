@@ -1,9 +1,9 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
-import type { SortableItemProps } from "@/Types/index";
+import { Input } from "@/components/ui/input";
+import type { Task, SortableItemProps } from "@/Types/index";
 
 const SortableItem: React.FC<SortableItemProps> = ({
   id,
@@ -14,9 +14,9 @@ const SortableItem: React.FC<SortableItemProps> = ({
   handleSave,
   handleChange,
   handleDeleteTask,
+  index
 }) => {
-  const { attributes, listeners, setNodeRef, transform, transition } =
-    useSortable({ id: id });
+  const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 
   const style = {
     transform: CSS.Transform.toString(transform),
@@ -24,45 +24,48 @@ const SortableItem: React.FC<SortableItemProps> = ({
   };
 
   const isEditing = task.id != null && editingId === task.id.toString();
-  
+  console.log(task);
+  console.log(editedTask);
   return (
     <tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <td className="border px-4 py-2">{task.order}</td>
       <td className="border px-4 py-2">
-        {isEditing ? (
+        {task.order != null ? task.order.toString() : (index + 1).toString()}
+      </td>
+      <td className="border px-4 py-2">
+      {isEditing ? (
           <Input
-            value={editedTask?.name || ""}
-            onChange={(e) => handleChange(e, "name")}
+            value={editedTask?.taskName || editedTask?.name}
+            onChange={(e) => handleChange(e, "taskName")}
           />
         ) : (
-          task.name
+          task.taskName || task.name
         )}
       </td>
       <td className="border px-4 py-2">
         {isEditing ? (
           <Input
-            value={editedTask?.estimatedTime?.toString() || ""}
-            onChange={(e) => handleChange(e, "estimatedTime")}
+            value={editedTask?.taskTime?.toString() || ""}
+            onChange={(e) => handleChange(e, "taskTime")}
             type="number"
           />
         ) : (
-          task.estimatedTime
+          task.taskTime != null ? task.taskTime.toString() : "0"
         )}
       </td>
       <td className="border px-4 py-2">
         {isEditing ? (
           <select
-            value={String(editedTask?.priority || 1)}
-            onChange={(e) => handleChange(e, "priority")}
+            value={String(editedTask?.tasktaskPriority || 1)}
+            onChange={(e) => handleChange(e, "tasktaskPriority")}
             className="w-full border rounded px-2 py-1"
           >
             <option value="1">低</option>
             <option value="2">中</option>
             <option value="3">高</option>
           </select>
-        ) : task.priority === 1 ? (
+        ) : task.tasktaskPriority === 1 ? (
           "低"
-        ) : task.priority === 2 ? (
+        ) : task.tasktaskPriority === 2 ? (
           "中"
         ) : (
           "高"

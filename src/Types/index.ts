@@ -20,17 +20,22 @@ export interface AuthState {
 }
 
 export interface SortableItemProps {
-  id: string | number;
-  task: Task; // Task型の定義が必要です
-  index: number;
+  id: number;
+  task: Task;
   editingId: string | null;
   editedTask: Task | null;
   handleEdit: (task: Task) => void;
-  handleSave: (id: string | number) => void;
+  handleSave: (id: number) => void;
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: string) => void;
-  handleDeleteTask: (id: string | number) => void;
+  handleDeleteTask: (id: number) => void;
+  index:number;
 }
-
+export interface TaskItem {
+  id: number;
+  name: string; // 追加
+  time: string; // 追加
+  priority: string; // 追加
+}
 export type UserType = {
   id: number;
   name: string;
@@ -39,7 +44,10 @@ export type UserType = {
 };
 
 export interface GoalItem {
-  goalId: number;
+  id: number; 
+  name: string;
+  period_start: string;
+  period_end: string;
   user_id: string;
   goal: string;
   currentSituation: string;
@@ -48,11 +56,12 @@ export interface GoalItem {
 }
 
 export interface GoalsListProps {
+  user_id: string | null;
   goals: GoalItem[];
   onGoalSelect: (goal: GoalItem) => Promise<void>;
   onGoalDelete: (id: number) => Promise<void>;
-  selectedGoal: GoalItem | null; // ここにselectedGoalを追加
-  serverError: string | null; // serverError を追加
+  selectedGoal: GoalItem | null;
+  serverError: string | null;
 }
 
 export interface GoalItem {
@@ -70,15 +79,18 @@ export interface Task {
   goalId: number;
   name: string;
   description: string | null;
-  elapsedTime: number;
-  estimatedTime: number;
-  priority: number;
+  // elapsedTime: number;
+  taskTime: number;
+  // taskPriority: number;
   order: number;
   reviewInterval: 'next_day' | '7_days' | '14_days' | '28_days' | '56_days' | 'completed';
   repetitionCount: number;
   lastNotificationSent: string | null;
   createdAt: string;
   updatedAt: string;
+  taskTime?: number;
+  taskName?: number;
+  tasktaskPriority?: number;
 }
 
 export interface ScheduleProps {
@@ -128,8 +140,8 @@ export interface Goal {
   progressPercentage: number;
   created_at: string;
   updated_at: string;
-  estimatedTime?: number; // ここに追加
-  priority?: number; // ここに追加
+  taskTime?: number; // ここに追加
+  tasktaskPriority?: number; // ここに追加
 }
 
 

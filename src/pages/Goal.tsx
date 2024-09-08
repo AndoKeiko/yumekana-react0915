@@ -1,3 +1,89 @@
+
+// import React, { useState } from 'react';
+// import SimpleSortableItem from "./SimpleSortableItem";
+// import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
+// import { Alert, AlertDescription } from "@/components/ui/alert";
+// import { Button } from "@/components/ui/button";
+// import { Textarea } from "@/components/ui/textarea";
+// import { Input } from "@/components/ui/input";
+// import { Label } from "@/components/ui/label";
+// import type { Task } from '@/Types/index';
+
+// const Goal: React.FC = () => {
+//   const [tasks, setTasks] = useState<Task[]>([]);
+//   const [taskName, setTaskName] = useState<string>('');
+
+//   const handleAddTask = () => {
+//     const newTask: Task = {
+//       id: tasks.length + 1,
+//       name: taskName,
+//       taskTime: 0,
+//       taskPriority: 0,
+//       order: tasks.length + 1,
+//       userId: 1,
+//       goalId: 1,
+//       description: '',
+//       elapsedTime: 0,
+//       reviewInterval: 0,
+//       repetitionCount: 0,
+//       lastNotificationSent: null,
+//       createdAt: new Date().toISOString(),
+//       updatedAt: new Date().toISOString(),
+//     };
+//     setTasks([...tasks, newTask]);
+//     setTaskName('');
+//   };
+
+//   return (
+//     <section className="section">
+//       <h1 className="h1">近い未来の目標</h1>
+//       <form onSubmit={handleAddTask}>
+
+//       <div className="my-5">
+//         <Label htmlFor="taskName" className="w-full block text-left">タスク名</Label>
+//         <Input
+//           id="taskName"
+//           value={taskName}
+//           onChange={(e) => setTaskName(e.target.value)}
+//         />
+//         <Button onClick={handleAddTask} className="mt-2">タスクを追加</Button>
+//       </div>
+//       </form>
+//       {tasks.length > 0 ? (
+//         <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+//           <table className="min-w-full bg-white">
+//             <thead>
+//               <tr>
+//                 <th className="border px-4 py-2">順序</th>
+//                 <th className="border px-4 py-2">タスク名</th>
+//                 <th className="border px-4 py-2">所要時間</th>
+//                 <th className="border px-4 py-2">優先度</th>
+//                 <th className="border px-4 py-2">アクション</th>
+//               </tr>
+//             </thead>
+//             <tbody>
+//               {tasks.map((task, index) => (
+//                 <SimpleSortableItem
+//                   key={task.id || index}
+//                   id={task.id}
+//                   task={task}
+//                   index={index}
+//                 />
+//               ))}
+//             </tbody>
+//           </table>
+//         </SortableContext>
+//       ) : (
+//         <p>タスクがありません。または読み込み中です。</p>
+//       )}
+//     </section>
+//   );
+// };
+
+// export default Goal;
+
+
+
 import React, { useState, useCallback, useEffect } from "react";
 import { useUser } from '../hooks/useUser';
 import { useForm } from "react-hook-form";
@@ -24,11 +110,13 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-import SortableItem from "./SortableItem";
+// import SortableItem from "./SortableItem";
 
 import { Calendar, momentLocalizer } from 'react-big-calendar';
 import moment from 'moment';
 import 'react-big-calendar/lib/css/react-big-calendar.css';
+// import SimpleSortableItem from "./SimpleSortableItem";
+import SortableItem from "./SortableItem";
 const localizer = momentLocalizer(moment);
 
 interface UserResponse {
@@ -36,7 +124,7 @@ interface UserResponse {
 }
 
 //Goalコンポーネント
-const Goal: React.FC = () => {
+const Goal: React.FC<GoalProps> = () => {
   //状態変数の定義
   const [serverError, setServerError] = useState<string | null>(null);
   const [response, setResponse] = useState<string>("");
@@ -192,7 +280,7 @@ const handleChange = (
   if (editedTask) {
     setEditedTask({
       ...editedTask,
-      [field]: field === "estimatedTime" || field === "priority" ? Number(e.target.value) : e.target.value
+      [field]: field === "taskTime" || field === "tasktaskPriority" ? Number(e.target.value) : e.target.value
     });
   }
 };
@@ -215,28 +303,29 @@ const handleDeleteTask = async (id: string | number) => {
     console.log("Calculated progress:", roundedProgress); // デバッグ用
   }, [totalTime, status, setValue]);
 
-  useEffect(() => {
     console.log("chatResponse updated:", chatResponse);
-    if (chatResponse.length > 0) {
-      const transformedTasks = chatResponse.map((task, index) => ({
-        id: index + 1,
-        name: task.name,
-        estimatedTime: task.estimatedTime,
-        priority: task.priority,
-        order: index + 1,
-        userId: task.userId,
-        goalId: task.goalId,
-        description: task.description,
-        elapsedTime: task.elapsedTime,
-        reviewInterval: task.reviewInterval || 0,
-        repetitionCount: task.repetitionCount || 0,
-        lastNotificationSent: task.lastNotificationSent || null,
-        createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
-        updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
-      }));
-      setTasks(transformedTasks);
-    }
-  }, [chatResponse]);
+
+    useEffect(() => {
+      if (chatResponse.length > 0) {
+        const transformedTasks = chatResponse.map((task, index) => ({
+          id: index + 1,
+          name: String(task.taskName ?? ""),   // taskName を使用
+          taskTime: task.taskTime ?? 0,  // taskTime を使用
+          taskPriority: task.tasktaskPriority,  // tasktaskPriority を使用
+          order: index + 1,
+          userId: task.userId,
+          goalId: task.goalId,
+          description: task.description,
+          elapsedTime: task.elapsedTime,
+          reviewInterval: task.reviewInterval || 0,
+          repetitionCount: task.repetitionCount || 0,
+          lastNotificationSent: task.lastNotificationSent || null,
+          createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+          updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
+        }));
+        setTasks(transformedTasks);
+      }
+    }, [chatResponse]);
   
   useEffect(() => {
     console.log("tasks updated:", tasks);
@@ -325,7 +414,7 @@ const handleDeleteTask = async (id: string | number) => {
           .trim();
         parsedChatResponse = JSON.parse(cleanedResponse);
   
-        const newTotalTime = parsedChatResponse.reduce((sum: number, task: Task) => sum + task.estimatedTime, 0);
+        const newTotalTime = parsedChatResponse.reduce((sum: number, task: Task) => sum + task.taskTime, 0);
         setValue("totalTime", newTotalTime);
   
         // const newStatus = await calculateStatus();
@@ -346,7 +435,7 @@ const handleDeleteTask = async (id: string | number) => {
       setChatResponse(parsedChatResponse);
       console.log("chatResponse:", chatResponse);
       await fetchGoals();
-      reset();
+      // reset();
     } catch (error) {
       if (axios.isAxiosError(error) && error.response) {
         console.error("Axios error response:", error.response.data);
@@ -541,9 +630,9 @@ const handleDeleteTask = async (id: string | number) => {
     if (chatResponse.length > 0) {
       const transformedTasks = chatResponse.map((task, index) => ({
         id: index + 1,
-        name: task.name,
-        estimatedTime: task.estimatedTime,
-        priority: task.priority,
+        name: String(task.taskName ?? ""),  // taskName を使用
+        taskTime: task.taskTime ?? 0,  // taskTime を使用
+        taskPriority: task.tasktaskPriority,  // tasktaskPriority を使用
         order: index + 1,
         userId: task.userId,
         goalId: task.goalId,
@@ -595,24 +684,20 @@ const handleDeleteTask = async (id: string | number) => {
 
 
   const handleEdit = (task: Task) => {
+    if (!task || !task.id) {
+      console.error("Invalid task object:", task);
+      return;
+    }
     setEditingId(task.id.toString());  // number を string に変換
     setEditedTask({ ...task });
   };
   
-  if (errorMessage) {
-    return <div>{errorMessage}</div>;  // エラーメッセージを表示
-  }
-  
-  if (!userId) {
-    return <div>Loading...</div>;  // ユーザーIDがまだ取得されていない場合
-  }
-
-const transformTasks = (tasks: any[]): Task[] => {
+  const transformTasks = (tasks: any[]): Task[] => {
   return tasks.map((task, index) => ({
     id: index + 1,
     name: task.taskName,
-    estimatedTime: task.taskTime,
-    priority: task.taskPriority,
+    taskTime: task.taskTime,
+    taskPriority: task.tasktaskPriority,
     order: index + 1,
     userId: task.userId,
     goalId: task.goalId,
@@ -625,6 +710,13 @@ const transformTasks = (tasks: any[]): Task[] => {
     updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
   }));
 };
+if (errorMessage) {
+  return <div>{errorMessage}</div>;  // エラーメッセージを表示
+}
+
+if (!userId) {
+  return <div>Loading...</div>;  // ユーザーIDがまだ取得されていない場合
+}
 
   console.log("Validation errors:", errors);
   console.log("chatResponse:", chatResponse);
@@ -752,19 +844,27 @@ const transformTasks = (tasks: any[]): Task[] => {
   </thead>
   <tbody>
   {tasks.map((task, index) => (
-      <SortableItem
-        key={task.id || index}
-        id={task.id}
-        task={task}
-        index={task.order - 1}
-        editingId={editingId}
-        editedTask={editedTask}
-        handleEdit={handleEdit}
-        handleSave={handleSave}
-        handleChange={handleChange}
-        handleDeleteTask={handleDeleteTask}
-      />
-    ))}
+                <SortableItem
+                  key={task.id || index}
+                  id={task.id}
+                  task={task}
+                  index={index}
+                  editingId={editingId}
+                  editedTask={editedTask}
+                  handleEdit={handleEdit}
+                  handleSave={handleSave}
+                  handleChange={handleChange}
+                  handleDeleteTask={handleDeleteTask}
+                />
+              ))}
+          {/* {tasks.map((task, index) => (
+        <SimpleSortableItem
+          key={task.id || index}
+          id={task.id} 
+          task={task}
+          index={index}
+        />
+      ))} */}
   </tbody>
 </table>
 </SortableContext>

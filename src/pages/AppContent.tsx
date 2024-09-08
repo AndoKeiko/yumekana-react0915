@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Navigate,useNavigate, useLocation } from "react-router-dom";
+import { Routes, Route, Navigate,useNavigate, useLocation,BrowserRouter as Router } from "react-router-dom";
 import axios from 'axios';
 import Goal from "./Goal";
 import CreatePost from "./CreatePost";
@@ -14,6 +14,7 @@ import Sidebar from "../components/Sidebar";
 import DOMPurify from 'dompurify';
 import type { Task } from "@/Types/index";
 import { API_ENDPOINTS } from "@/config/api";
+import GoalDetail from "./GoalDetail";
 
 function AppContent() {
   const location = useLocation();
@@ -22,30 +23,36 @@ function AppContent() {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [existingTasks, setExistingTasks] = useState<Task[]>([]);
   const [chatResponse, setChatResponse] = useState<Task[]>([]);
+  const [error, setError] = useState<string | null>(null);
+  const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
 
   useEffect(() => {
-    // CSRF Cookieを最初に取得
     axios.get('/sanctum/csrf-cookie').then(() => {
-      // CSRF Cookieを取得してからユーザー情報を取得
       axios.get(API_ENDPOINTS.USER, { withCredentials: true })
         .then(response => {
           if (response.data && typeof response.data === 'object') {
             console.log(response.data);
             setIsAuth(true);
+            if (response.data.users && response.data.users[0] && response.data.users[0].id) {
+              setUserId(response.data.users[0].id.toString());
+            }
           } else {
-            console.error('予期しないレスポンス形式:', response.data);
+            setError('ユーザー情報の形式が不正です');
             setIsAuth(false);
           }
         })
         .catch((error) => {
           console.error('ユーザー情報の取得に失敗しました:', error);
+          setError('ユーザー情報の取得に失敗しました。再度ログインしてください。');
           setIsAuth(false);
         });
     }).catch((error) => {
       console.error('CSRFクッキーの取得に失敗しました:', error);
+      setError('セッションの初期化に失敗しました。ページをリロードしてください。');
     });
   }, []);
+
 
       const onSaveTasks = async (tasks: Task[]): Promise<void> => {
         try {
@@ -138,7 +145,7 @@ Time-bound（期限）： 目標達成のための期限を設定します。</p
 
         {/* 動的に変更されるテキスト */}
         <div
-          className="p-12 mt-16 text-white w-full text-left"
+          className="p-16 mt-16 text-white w-full text-left"
           dangerouslySetInnerHTML={{
             __html: DOMPurify.sanitize(leftSideText),
           }}
@@ -154,7 +161,7 @@ Time-bound（期限）： 目標達成のための期限を設定します。</p
             path="/TaskList" 
             element={
               <ProtectedRoute>
-                <TaskList 
+                <TaskList
                   tasks={tasks}
                   setTasks={setTasks}
                   onSaveTasks={onSaveTasks}
@@ -165,15 +172,31 @@ Time-bound（期限）： 目標達成のための期限を設定します。</p
             } 
           />
           <Route path="/goals" element={<ProtectedRoute><Goal /></ProtectedRoute>} />
-          <Route path="/goallist" element={<ProtectedRoute><GoalsListPage /></ProtectedRoute>} />
+          <Route 
+            path="/goallist" 
+            element={
+              <ProtectedRoute>
+                {userId ? <GoalsListPage user_id={userId} /> : <div>Loading...</div>}
+              </ProtectedRoute>
+            } 
+          />
           <Route path="/tasks/:goalId" element={<ProtectedRoute><TaskListPage /></ProtectedRoute>} />
           <Route path="/CreatePost" element={<ProtectedRoute><CreatePost /></ProtectedRoute>} />
+          <Route path="/goals/:id" element={<ProtectedRoute><GoalDetail /></ProtectedRoute>} />
           {/* 認証が不要なルート */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>
+        {/* {error && (
+            <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
+              <strong className="font-bold">エラー:</strong>
+              <span className="block sm:inline"> {error}</span>
+            </div>
+          )} */}
       </div>
+
     </div>
+
   );
 }
 

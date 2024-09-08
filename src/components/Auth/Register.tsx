@@ -72,8 +72,7 @@ const Register: React.FC = () => {
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 text-left">名前</label>
           <input
             {...register("name", { required: "名前は必須です" })}
-            type="text"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            type="text"  className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           />
           {errors.name && <span className="text-red-600 text-sm">{errors.name.message}</span>}
         </div>
@@ -81,8 +80,7 @@ const Register: React.FC = () => {
           <label htmlFor="nickname" className="block text-sm font-medium text-gray-700 text-left">ニックネーム</label>
           <input
             {...register("nickname", { required: "ニックネームは必須です" })}
-            type="text"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            type="text" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           />
           {errors.nickname && <span className="text-red-600 text-sm">{errors.nickname.message}</span>}
         </div>
@@ -96,8 +94,7 @@ const Register: React.FC = () => {
                 message: "メールアドレスの形式が正しくありません",
               },
             })}
-            type="email"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            type="email" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           />
           {errors.email && <span className="text-red-600 text-sm">{errors.email.message}</span>}
         </div>
@@ -111,8 +108,7 @@ const Register: React.FC = () => {
                 message: "8文字以上入力してください",
               },
             })}
-            type="password"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            type="password" autoComplete="current-password" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           />
           {errors.password && <span className="text-red-600 text-sm">{errors.password.message}</span>}
         </div>
