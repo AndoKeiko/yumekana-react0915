@@ -1,93 +1,8 @@
 
-// import React, { useState } from 'react';
-// import SimpleSortableItem from "./SimpleSortableItem";
-// import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
-// import { Alert, AlertDescription } from "@/components/ui/alert";
-// import { Button } from "@/components/ui/button";
-// import { Textarea } from "@/components/ui/textarea";
-// import { Input } from "@/components/ui/input";
-// import { Label } from "@/components/ui/label";
-// import type { Task } from '@/Types/index';
-
-// const Goal: React.FC = () => {
-//   const [tasks, setTasks] = useState<Task[]>([]);
-//   const [taskName, setTaskName] = useState<string>('');
-
-//   const handleAddTask = () => {
-//     const newTask: Task = {
-//       id: tasks.length + 1,
-//       name: taskName,
-//       taskTime: 0,
-//       taskPriority: 0,
-//       order: tasks.length + 1,
-//       userId: 1,
-//       goalId: 1,
-//       description: '',
-//       elapsedTime: 0,
-//       reviewInterval: 0,
-//       repetitionCount: 0,
-//       lastNotificationSent: null,
-//       createdAt: new Date().toISOString(),
-//       updatedAt: new Date().toISOString(),
-//     };
-//     setTasks([...tasks, newTask]);
-//     setTaskName('');
-//   };
-
-//   return (
-//     <section className="section">
-//       <h1 className="h1">近い未来の目標</h1>
-//       <form onSubmit={handleAddTask}>
-
-//       <div className="my-5">
-//         <Label htmlFor="taskName" className="w-full block text-left">タスク名</Label>
-//         <Input
-//           id="taskName"
-//           value={taskName}
-//           onChange={(e) => setTaskName(e.target.value)}
-//         />
-//         <Button onClick={handleAddTask} className="mt-2">タスクを追加</Button>
-//       </div>
-//       </form>
-//       {tasks.length > 0 ? (
-//         <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-//           <table className="min-w-full bg-white">
-//             <thead>
-//               <tr>
-//                 <th className="border px-4 py-2">順序</th>
-//                 <th className="border px-4 py-2">タスク名</th>
-//                 <th className="border px-4 py-2">所要時間</th>
-//                 <th className="border px-4 py-2">優先度</th>
-//                 <th className="border px-4 py-2">アクション</th>
-//               </tr>
-//             </thead>
-//             <tbody>
-//               {tasks.map((task, index) => (
-//                 <SimpleSortableItem
-//                   key={task.id || index}
-//                   id={task.id}
-//                   task={task}
-//                   index={index}
-//                 />
-//               ))}
-//             </tbody>
-//           </table>
-//         </SortableContext>
-//       ) : (
-//         <p>タスクがありません。または読み込み中です。</p>
-//       )}
-//     </section>
-//   );
-// };
-
-// export default Goal;
-
-
-
 import React, { useState, useCallback, useEffect } from "react";
 import { useUser } from '../hooks/useUser';
 import { useForm } from "react-hook-form";
-import axios from 'axios';
+import axios, { AxiosError, isAxiosError } from 'axios';
 import "../App.css";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -97,7 +12,7 @@ import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { API_ENDPOINTS } from "@/config/api";
 import type { Task, Goal } from "@/Types/index";
-
+import { SortableItem } from './SortableItem';
 
 // import {
 //   KeyboardSensor,
@@ -134,6 +49,8 @@ interface GoalProps {
 //Goalコンポーネント
 const Goal: React.FC<GoalProps> = () => {
   //状態変数の定義
+  const [data, setData] = useState<any>(null);
+  const [error, setError] = useState<Error | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [response, setResponse] = useState<string>("");
   const [chatResponse, setChatResponse] = useState<Task[]>([]);
@@ -250,12 +167,12 @@ const Goal: React.FC<GoalProps> = () => {
 
   const handleDragEnd = (event: any) => {
     const { active, over } = event;
-
+  
     if (active.id !== over.id) {
       setTasks((items) => {
         const oldIndex = items.findIndex((item) => item.id === active.id);
         const newIndex = items.findIndex((item) => item.id === over.id);
-
+  
         return arrayMove(items, oldIndex, newIndex).map((item, index) => ({
           ...item,
           order: index + 1
@@ -384,7 +301,7 @@ const Goal: React.FC<GoalProps> = () => {
     try {
       setIsLoading(true);
       setServerError(null);
-      const result = await axios.post(
+      const result = await axios.post<{ message: string; Goals: { id: number } }>(
         API_ENDPOINTS.CREATE_GOAL,
         submissionData,
         {
@@ -422,7 +339,7 @@ const Goal: React.FC<GoalProps> = () => {
           .trim();
         parsedChatResponse = JSON.parse(cleanedResponse);
 
-        const newTotalTime = parsedChatResponse.reduce((sum: number, task: Task) => sum + task.taskTime, 0);
+        const newTotalTime = parsedChatResponse.reduce((sum: number, task: Task) => sum + (task.taskTime ?? 0), 0);
         setValue("totalTime", newTotalTime);
 
         // const newStatus = await calculateStatus();
@@ -431,9 +348,10 @@ const Goal: React.FC<GoalProps> = () => {
       } catch (error) {
         handleError(error);
         console.error("エラー:", error);
-        if (axios.isAxiosError(error)) {
-          console.log("サーバーレスポンス:", error.response?.data);
-          console.log("リクエストデータ:", error.config?.data);
+        if (typeof error === 'object' && error !== null && 'response' in error) {
+          const axiosError = error as { response?: { data?: unknown }, config?: { data?: unknown } };
+          console.log("サーバーレスポンス:", axiosError.response?.data);
+          console.log("リクエストデータ:", axiosError.config?.data);
         }
       } finally {
         setIsLoading(false);
@@ -444,12 +362,12 @@ const Goal: React.FC<GoalProps> = () => {
       console.log("chatResponse:", chatResponse);
       await fetchGoals();
       // reset();
-    } catch (error) {
-      if (axios.isAxiosError(error) && error.response) {
-        console.error("Axios error response:", error.response.data);
-        setServerError(`エラー: ${error.response.data.message || 'Unknown error'}`);
+    } catch (error: unknown) {
+      if (isAxiosError(error) && error.response) {
+        console.error("Axios エラーレスポンス:", error.response.data);
+        setServerError(`エラー: ${error.response.data.message || '不明なエラー'}`);
       } else {
-        console.error("Non-Axios error:", error);
+        console.error("Axios以外のエラー:", error);
         setServerError("未知のエラーが発生しました");
       }
     } finally {
@@ -721,24 +639,24 @@ const Goal: React.FC<GoalProps> = () => {
     setEditedTask({ ...task });
   };
 
-  const transformTasks = (tasks: any[]): Task[] => {
-    return tasks.map((task, index) => ({
-      id: index + 1,
-      name: task.taskName,
-      taskTime: task.taskTime,
-      taskPriority: task.taskPriority,
-      order: index + 1,
-      userId: task.userId,
-      goalId: task.goalId,
-      description: task.description,
-      elapsedTime: task.elapsedTime,
-      reviewInterval: task.reviewInterval || 0,
-      repetitionCount: task.repetitionCount || 0,
-      lastNotificationSent: task.lastNotificationSent || null,
-      createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
-      updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
-    }));
-  };
+  // const transformTasks = (tasks: any[]): Task[] => {
+  //   return tasks.map((task, index) => ({
+  //     id: index + 1,
+  //     name: task.taskName,
+  //     taskTime: task.taskTime,
+  //     taskPriority: task.taskPriority,
+  //     order: index + 1,
+  //     userId: task.userId,
+  //     goalId: task.goalId,
+  //     description: task.description,
+  //     elapsedTime: task.elapsedTime,
+  //     reviewInterval: task.reviewInterval || 0,
+  //     repetitionCount: task.repetitionCount || 0,
+  //     lastNotificationSent: task.lastNotificationSent || null,
+  //     createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+  //     updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
+  //   }));
+  // };
   if (errorMessage) {
     return <div>{errorMessage}</div>;  // エラーメッセージを表示
   }
