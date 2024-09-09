@@ -87,7 +87,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useUser } from '../hooks/useUser';
 import { useForm } from "react-hook-form";
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 import "../App.css";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -97,6 +97,7 @@ import { Label } from "@/components/ui/label";
 import { Link } from "react-router-dom";
 import { API_ENDPOINTS } from "@/config/api";
 import type { Task, Goal } from "@/Types/index";
+
 
 import {
   KeyboardSensor,
@@ -122,6 +123,12 @@ const localizer = momentLocalizer(moment);
 interface UserResponse {
   users: { id: number }[];
 }
+
+// GoalPropsの定義
+interface GoalProps {
+  goalId?: number;
+}
+
 
 //Goalコンポーネント
 const Goal: React.FC<GoalProps> = () => {
@@ -309,9 +316,9 @@ const handleDeleteTask = async (id: string | number) => {
       if (chatResponse.length > 0) {
         const transformedTasks = chatResponse.map((task, index) => ({
           id: index + 1,
-          name: String(task.taskName ?? ""),   // taskName を使用
-          taskTime: task.taskTime ?? 0,  // taskTime を使用
-          taskPriority: task.tasktaskPriority,  // tasktaskPriority を使用
+          name: String(task.taskName ?? ""),
+          taskTime: task.taskTime ?? 0,
+          taskPriority: task.taskPriority,
           order: index + 1,
           userId: task.userId,
           goalId: task.goalId,
@@ -664,14 +671,18 @@ const handleDeleteTask = async (id: string | number) => {
    * @param {number} id - 目標ID
    * @returns {Promise<void>}
    */
+  useEffect(() => {
+    if (selectedGoal) {
+      fetchTasks(selectedGoal.id);
+    }
+  }, [selectedGoal]);
+
   const fetchTasks = async (goalId: number) => {
     try {
       const response = await axios.get(API_ENDPOINTS.GOAL_TASKS(goalId));
       console.log("Fetched tasks:", response.data);
       if (response.data && Array.isArray(response.data)) {
-        const transformedTasks = transformTasks(response.data);
-        setTasks(transformedTasks);
-        console.log("Transformed tasks:", transformedTasks);
+        setTasks(response.data);
       } else {
         console.error("Unexpected response format:", response.data);
         setServerError("タスクデータの形式が不正です");
@@ -681,6 +692,23 @@ const handleDeleteTask = async (id: string | number) => {
       setServerError("タスクの取得に失敗しました");
     }
   };
+  // const fetchTasks = async (goalId: number) => {
+  //   try {
+  //     const response = await axios.get(API_ENDPOINTS.GOAL_TASKS(goalId));
+  //     console.log("Fetched tasks:", response.data);
+  //     if (response.data && Array.isArray(response.data)) {
+  //       const transformedTasks = transformTasks(response.data);
+  //       setTasks(transformedTasks);
+  //       console.log("Transformed tasks:", transformedTasks);
+  //     } else {
+  //       console.error("Unexpected response format:", response.data);
+  //       setServerError("タスクデータの形式が不正です");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching tasks:", error);
+  //     setServerError("タスクの取得に失敗しました");
+  //   }
+  // };
 
 
   const handleEdit = (task: Task) => {

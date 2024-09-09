@@ -3,7 +3,7 @@ import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { Task, SortableItemProps } from "@/Types/index";
+import type { SortableItemProps } from "@/Types/index";
 
 const SortableItem: React.FC<SortableItemProps> = ({
   id,
@@ -14,7 +14,8 @@ const SortableItem: React.FC<SortableItemProps> = ({
   handleSave,
   handleChange,
   handleDeleteTask,
-  index
+  index,
+  goalId
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 

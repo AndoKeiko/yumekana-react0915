@@ -13,10 +13,10 @@ const GoalDetail: React.FC = () => {
   useEffect(() => {
     const fetchGoalDetails = async () => {
       try {
-        const goalResponse = await axios.get(`${API_ENDPOINTS.GOALS}/${id}`);
+        const goalResponse: AxiosResponse<GoalItem> = await axios.get(`${API_ENDPOINTS.GOALS}/${id}`);
         setGoal(goalResponse.data);
 
-        const tasksResponse = await axios.get(API_ENDPOINTS.GOAL_TASKS(Number(id)));
+        const tasksResponse: AxiosResponse<{ tasks: TaskItem[] }> = await axios.get(API_ENDPOINTS.GOAL_TASKS(Number(id)));
         setTasks(tasksResponse.data.tasks);
       } catch (error) {
         console.error("Failed to fetch goal details:", error);

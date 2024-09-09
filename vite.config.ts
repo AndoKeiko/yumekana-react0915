@@ -17,7 +17,7 @@ export default defineConfig({
   server: {
     port: 5174, // 開発サーバーのポート設定（必要に応じて変更してください）
     open: true, // 開発サーバー起動時にブラウザを自動で開く
-    historyApiFallback: true, // SPAのルーティングのために必要
+    // historyApiFallback オプションを削除
   },
   build: {
     outDir: 'dist', // ビルド出力ディレクトリ

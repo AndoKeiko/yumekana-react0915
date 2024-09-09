@@ -43,7 +43,7 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
     }
     setIsLoading(true);
     try {
-      const response = await axios.get(API_ENDPOINTS.USER_GOALS(user_id));
+      const response = await axios.get<GoalItem[]>(API_ENDPOINTS.USER_GOALS(user_id));
       setGoals(response.data);
       setServerError(null);
     } catch (error) {

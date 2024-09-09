@@ -5,6 +5,7 @@ interface AuthState {
   isAuthenticated: boolean;
   error: string | null;
   isLoading: boolean;
+  user: { userId: string } | null;  // この行を追加
 }
 
 const initialState: AuthState = {
@@ -12,6 +13,7 @@ const initialState: AuthState = {
   isAuthenticated: false,
   error: null,
   isLoading: false,
+  user: null,  // この行を追加
 };
 
 const authSlice = createSlice({

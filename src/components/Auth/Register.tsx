@@ -8,8 +8,11 @@ import { API_ENDPOINTS } from "@/config/api";
 import type { RegisterForm, UserType } from "@/Types/index";
 import axios, { AxiosError } from 'axios';
 
+type RegisterProps = {
+  // ここにプロップの型を定義
+};
 
-const Register: React.FC = () => {
+const Register: React.FC<RegisterProps> = (props) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { register, handleSubmit, formState: { errors }, watch } = useForm<RegisterForm>();

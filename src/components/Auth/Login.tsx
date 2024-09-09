@@ -9,7 +9,10 @@ import type { LoginForm, LoginResponse } from "@/Types/index";
 import axios from 'axios';
 
 
-const Login: React.FC = () => {
+type LoginProps = {
+  // ここにプロップの型を定義
+};
+const Login: React.FC<LoginProps> = (props) => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();

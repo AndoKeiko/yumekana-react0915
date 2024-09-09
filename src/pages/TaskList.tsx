@@ -19,7 +19,7 @@ import SortableItem from './SortableItem';
 import Schedule from './Schedule';
 import type { Task } from "@/Types/index";
 import moment from 'moment';
-import axios from "axios";
+import axios, { AxiosError } from "axios";
 
 interface SortConfig {
   key: keyof Task | null;
@@ -45,7 +45,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
   const [desiredGoalId, setDesiredGoalId] = useState<string | null>(null);
 
   const isAxiosError = (error: unknown): error is AxiosError => {
-    return axios.isAxiosError(error);
+    return error instanceof Error && 'isAxiosError' in error;
   };
 
   const sensors = useSensors(
@@ -219,7 +219,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
             </thead>
             <tbody>
               {sortedTasks
-                .filter(task => desiredGoalId === null || task.goal_id === Number(desiredGoalId))  // goal_idで絞り込み
+                .filter(task => desiredGoalId === null || task.goalId === Number(desiredGoalId))  // goal_idで絞り込み
                 .map((task, index) => (
                   <SortableItem
                     key={task.id}  // keyはtask.idを使用
@@ -232,7 +232,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
                     handleSave={handleSave}
                     handleChange={handleChange}
                     handleDeleteTask={handleDeleteTask}
-                    goalId={task.goal_id}  // goalIdを追加
+                    goalId={task.goalId}  // goalIdを追加
                   />
                 ))}
             </tbody>

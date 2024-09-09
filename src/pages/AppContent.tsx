@@ -16,6 +16,20 @@ import type { Task } from "@/Types/index";
 import { API_ENDPOINTS } from "@/config/api";
 import GoalDetail from "./GoalDetail";
 
+axios.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    if (error.response && error.response.status === 401) {
+      // 認証エラーの場合の処理
+      console.log('認証エラーが発生しました。ログインページにリダイレクトします。');
+      // ここでログアウト処理を行い、ログインページにリダイレクトする
+      // 例: logout();
+      // 例: navigate('/login');
+    }
+    return Promise.reject(error);
+  }
+);
+
 function AppContent() {
   const location = useLocation();
   const [leftSideText, setLeftSideText] = useState<string>("");
