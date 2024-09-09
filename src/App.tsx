@@ -3,20 +3,15 @@ import ErrorBoundary from "./components/ErrorBoundary";
 import { useCsrfToken } from './hooks/useCsrfToken';
 
 function App() {
-  useCsrfToken();
+  const { csrfToken, error } = useCsrfToken();
 
-  // URLからトークンを取得（例としてクエリパラメータから）
-  const params = new URLSearchParams(window.location.search);
-  const token = params.get("token");
-
-  if (token) {
-    localStorage.setItem("token", token);
-    // トークンを使用してユーザー情報を取得するなど
+  if (error) {
+    return <div>Error: {error.message}</div>;
   }
 
   return (
     <ErrorBoundary>
-      <AppContent />
+      <AppContent csrfToken={csrfToken} />
     </ErrorBoundary>
   );
 }

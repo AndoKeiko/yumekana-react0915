@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { setAuth, setUser } from '../../store/authSlice';
@@ -29,6 +29,17 @@ const Register: React.FC<RegisterProps> = (props) => {
   //   };
   //   getCsrfToken();
   // }, []);
+
+  // useEffect(() => {
+  //   const xsrfToken = document.cookie
+  //     .split('; ')
+  //     .find(row => row.startsWith('XSRF-TOKEN'))
+  //     ?.split('=')[1];
+  //   if (xsrfToken) {
+  //     axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrfToken;
+  //   }
+  // }, []);
+
 
   const onSubmit = async (data: RegisterForm) => {
     setRegisterError(null);

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../../store/authSlice';
@@ -7,18 +7,33 @@ import api from '../../api/axios';
 import { API_ENDPOINTS } from "@/config/api";
 import type { LoginForm, LoginResponse } from "@/Types/index";
 import axios from 'axios';
+import { useCsrfToken } from '@/hooks/useCsrfToken';
 
 const Login: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
   const [loginError, setLoginError] = useState<string | null>(null);
+  const { csrfToken, error: csrfError } = useCsrfToken();
+
+  // useEffect(() => {
+  //   const xsrfToken = document.cookie
+  //   .split('; ')
+  //   .find(row => row.startsWith('XSRF-TOKEN'))
+  //   ?.split('=')[1];
+  //   if (xsrfToken) {
+  //   axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrfToken;
+  //   }
+  //   }, []);
 
   const onSubmit = async (data: LoginForm) => {
     setLoginError(null);
     dispatch(loginStart());
   
     try {
+      // CSRFトークンを取得
+      await axios.get('/sanctum/csrf-cookie', { withCredentials: true });
+  
       const response = await api.post<LoginResponse>(API_ENDPOINTS.LOGINURL, data, { withCredentials: true });
       const { access_token, token_type, user } = response.data;
       dispatch(loginSuccess({ token: access_token, userId: user.id.toString() }));
@@ -48,7 +63,6 @@ const Login: React.FC = () => {
       console.error('Login failed', error);
     }
   };
-
   const googleLogin = () => {
     window.location.href = API_ENDPOINTS.GOOGLE_AUTH;
   };
@@ -61,7 +75,12 @@ const Login: React.FC = () => {
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
             <span className="block sm:inline">{loginError}</span>
           </div>
-          )}
+        )}
+        {csrfError && (
+          <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+            <span className="block sm:inline">{csrfError}</span>
+          </div>
+        )}
         <div className="mb-4">
           <label htmlFor="email" className="block text-sm font-medium text-gray-700">メールアドレス</label>
           <input
