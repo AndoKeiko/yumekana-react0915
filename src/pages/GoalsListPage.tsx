@@ -81,7 +81,7 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
 
   return (
     <section className="section">
-      <h2 className="h2">目標一覧</h2>
+      <h2 className="h2">目標一覧GoalListPage</h2>
       {serverError && (
         <Alert>
           <AlertDescription>
@@ -98,7 +98,10 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
           {goals.map((goal) => (
             <li
               key={goal.id}
-              onClick={() => handleGoalSelect(goal)}
+              onClick={() => {
+                console.log("Clicked goal:あああ", goal);
+                handleGoalSelect(goal);
+              }}
               className={`flex items-center justify-between py-5 px-8 cursor-pointer ${
                 selectedGoal?.id === goal.id ? "bg-blue-100" : "hover:bg-gray-100"
               }`}

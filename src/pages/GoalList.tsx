@@ -33,8 +33,10 @@ const GoalsList: React.FC<GoalsListProps> = ({
   const fetchTasks = useCallback(async (goalId: number) => {
     try {
       const response = await axios.get(API_ENDPOINTS.GOAL_TASKS(goalId));
+      console.log("API response for tasks:", response.data);
       const fetchedTasks = response.data.tasks;
       if (Array.isArray(fetchedTasks)) {
+        console.log("Fetched tasks:", fetchedTasks);
         setTasks(fetchedTasks);
       } else {
         console.error("Fetched tasks is not an array:", response.data);
@@ -48,10 +50,17 @@ const GoalsList: React.FC<GoalsListProps> = ({
   }, []);
 
   const handleGoalSelect = useCallback(async (goal: GoalItem) => {
+    console.log('handleGoalSelect called with goal:', goal);
     setSelectedGoalDetails(goal);
     setTasks([]); // タスクをリセット
-    await fetchTasks(goal.id);
-  }, [fetchTasks]);
+    try {
+      await fetchTasks(goal.id);
+      console.log('Tasks after fetching:', tasks);  // この行を追加
+    } catch (error) {
+      console.error('Error fetching tasks:', error);
+    }
+  }, [fetchTasks, tasks]);  // tasksを依存配列に追加
+
 
 
   // const handleGoalSelect = useCallback(async (goal: GoalItem) => {
@@ -97,7 +106,7 @@ const GoalsList: React.FC<GoalsListProps> = ({
 
   return (
     <section className="section">
-      <h2 className="h2">目標一覧</h2>
+      <h2 className="h2">目標一覧2</h2>
       {serverError && (
         <Alert>
           <AlertDescription>
@@ -115,9 +124,8 @@ const GoalsList: React.FC<GoalsListProps> = ({
             <li
               key={goal.id}
               onClick={() => handleGoalSelect(goal)}
-              className={`flex items-center justify-between py-5 px-8 cursor-pointer ${
-                selectedGoal?.id === goal.id ? "bg-blue-100" : "hover:bg-gray-100"
-              }`}
+              className={`flex items-center justify-between py-5 px-8 cursor-pointer ${selectedGoal?.id === goal.id ? "bg-blue-100" : "hover:bg-gray-100"
+                }`}
             >
               <p className="text-left flex">{goal.name}</p>
               <p className="text-left flex">
@@ -138,12 +146,21 @@ const GoalsList: React.FC<GoalsListProps> = ({
       {selectedGoalDetails && (
         <div className="edit-section">
           <h3>目標の編集: {selectedGoalDetails.name}</h3>
-          <h4>タスク一覧</h4>
+          <h4>タスク一覧GoalList</h4>
           {tasks.length > 0 ? (
             <ul>
-              {tasks.map((task) => (
-                <li key={task.id}>{task.name}</li>
-              ))}
+              {tasks.map((task, index) => {
+                console.log("Rendering task:", task);  // デバッグ用のログ
+                return (
+                  <SortableItem
+                    key={task.id || index}
+                    id={task.id}
+                    task={task}
+                    index={index}
+                  // ... その他のprops
+                  />
+                );
+              })}
             </ul>
           ) : (
             <p>タスクはありません。</p>

@@ -19,7 +19,7 @@ export const API_ENDPOINTS = {
   USER: `${BASE_URL}/user`,
 
   // CSRFトークン取得エンドポイント
-  CSRF_COOKIE: `${BASE_URL}/sanctum/csrf-cookie`,
+  CSRF_COOKIE: `/sanctum/csrf-cookie`,
 
   // 新しいユーザーを登録するエンドポイント
   CREATE_USER: `${BASE_URL}/users`,

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useDispatch } from 'react-redux';
 import { loginStart, loginSuccess, loginFailure } from '../../store/authSlice';
@@ -8,45 +8,25 @@ import { API_ENDPOINTS } from "@/config/api";
 import type { LoginForm, LoginResponse } from "@/Types/index";
 import axios from 'axios';
 
-
-type LoginProps = {
-  // ここにプロップの型を定義
-};
-const Login: React.FC<LoginProps> = () => {
+const Login: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
   const [loginError, setLoginError] = useState<string | null>(null);
 
-
-
-  useEffect(() => {
-    const initializeApp = async () => {
-      try {
-        await axios.get('/sanctum/csrf-cookie');
-        console.log('CSRF cookie set successfully');
-      } catch (error) {
-        console.error('Failed to set CSRF cookie', error);
-      }
-    };
-  
-    initializeApp();
-  }, []);
-
-
   const onSubmit = async (data: LoginForm) => {
     setLoginError(null);
     dispatch(loginStart());
-
+  
     try {
-      const response = await api.post<LoginResponse>(API_ENDPOINTS.LOGINURL, data);
+      const response = await api.post<LoginResponse>(API_ENDPOINTS.LOGINURL, data, { withCredentials: true });
       const { access_token, token_type, user } = response.data;
       dispatch(loginSuccess({ token: access_token, userId: user.id.toString() }));
       api.defaults.headers.common['Authorization'] = `${token_type} ${access_token}`;
       navigate('/goals');
-    } catch (error: any) { 
+    } catch (error) {
       let errorMessage = 'ログインに失敗しました。もう一度お試しください。';
-      if (error.isAxiosError) {
+      if (axios.isAxiosError(error)) {
         if (error.response) {
           switch (error.response.status) {
             case 401:

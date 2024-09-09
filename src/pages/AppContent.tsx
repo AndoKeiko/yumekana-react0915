@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { Routes, Route, Navigate,useNavigate, useLocation,BrowserRouter as Router } from "react-router-dom";
+import { Routes, Route, Navigate, useNavigate, useLocation, BrowserRouter as Router } from "react-router-dom";
 import axios from 'axios';
 import Goal from "./Goal";
 import CreatePost from "./CreatePost";
@@ -15,20 +15,7 @@ import DOMPurify from 'dompurify';
 import type { Task } from "@/Types/index";
 import { API_ENDPOINTS } from "@/config/api";
 import GoalDetail from "./GoalDetail";
-
-axios.interceptors.response.use(
-  (response) => response,
-  async (error) => {
-    if (error.response && error.response.status === 401) {
-      // 認証エラーの場合の処理
-      console.log('認証エラーが発生しました。ログインページにリダイレクトします。');
-      // ここでログアウト処理を行い、ログインページにリダイレクトする
-      // 例: logout();
-      // 例: navigate('/login');
-    }
-    return Promise.reject(error);
-  }
-);
+import { useCsrfToken } from "@/hooks/useCsrfToken";
 
 function AppContent() {
   const location = useLocation();
@@ -40,9 +27,10 @@ function AppContent() {
   const [error, setError] = useState<string | null>(null);
   const [userId, setUserId] = useState<string | null>(null);
   const navigate = useNavigate();
+  const csrfToken = useCsrfToken();
 
   useEffect(() => {
-    axios.get('/sanctum/csrf-cookie').then(() => {
+    if (csrfToken) {
       axios.get(API_ENDPOINTS.USER, { withCredentials: true })
         .then(response => {
           if (response.data && typeof response.data === 'object') {
@@ -61,21 +49,17 @@ function AppContent() {
           setError('ユーザー情報の取得に失敗しました。再度ログインしてください。');
           setIsAuth(false);
         });
-    }).catch((error) => {
-      console.error('CSRFクッキーの取得に失敗しました:', error);
-      setError('セッションの初期化に失敗しました。ページをリロードしてください。');
-    });
-  }, []);
+    }
+  }, [csrfToken]);
 
-
-      const onSaveTasks = async (tasks: Task[]): Promise<void> => {
-        try {
-          await axios.post('/save-tasks', { tasks });
-          console.log("タスクが保存されました");
-        } catch (error) {
-          console.error("タスクの保存に失敗しました", error);
-        }
-      };
+  const onSaveTasks = async (tasks: Task[]): Promise<void> => {
+    try {
+      await axios.post('/save-tasks', { tasks });
+      console.log("タスクが保存されました");
+    } catch (error) {
+      console.error("タスクの保存に失敗しました", error);
+    }
+  };
 
   const handleLogout = async () => {
     try {

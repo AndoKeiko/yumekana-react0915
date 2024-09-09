@@ -1,3 +1,7 @@
+export interface CsrfResponse {
+  csrf_token: string;
+}
+
 export interface LoginForm {
   email: string;
   password: string;
@@ -30,7 +34,10 @@ export interface SortableItemProps {
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: string) => void;
   handleDeleteTask: (id: number) => void;
   index:number;
+  onDelete: () => void; // この行を追加
 }
+
+
 export interface TaskItem {
   id: number;
   name: string; // 追加

@@ -1,8 +1,8 @@
 import React from "react";
 import { useSortable } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button"
 import type { SortableItemProps } from "@/Types/index";
 
 const SortableItem: React.FC<SortableItemProps> = ({
@@ -76,7 +76,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
           <Button onClick={() => handleSave(task.id)}>保存</Button>
         ) : (
           <div className="flex space-x-2">
-            <Button onClick={() => handleEdit(task)}>編集</Button>
+            <button onClick={() => handleEdit(task)}>編集</button>
             <Button className="ml-2" onClick={() => handleDeleteTask(task.id)}>
               削除
             </Button>

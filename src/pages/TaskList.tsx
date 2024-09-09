@@ -20,6 +20,7 @@ import Schedule from './Schedule';
 import type { Task } from "@/Types/index";
 import moment from 'moment';
 import axios, { AxiosError } from "axios";
+import { useNavigate } from 'react-router-dom';
 
 interface SortConfig {
   key: keyof Task | null;
@@ -43,6 +44,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
   const [sortConfig, setSortConfig] = useState<SortConfig>({ key: null, direction: 'ascending' });
   const [isLoading] = useState<boolean>(false);
   const [desiredGoalId, setDesiredGoalId] = useState<string | null>(null);
+  const navigate = useNavigate();
 
   const isAxiosError = (error: unknown): error is AxiosError => {
     return error instanceof Error && 'isAxiosError' in error;
@@ -192,6 +194,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
     console.log("Generated Calendar Events:", calendarEvents);
   };
 
+  const handleGoBack = () => {
+    navigate(-1); // 前のページに戻る
+  };
+
+
   // ... (他の関数は変更なし)
   if (isLoading) {
     return <div>読み込み中...</div>;
@@ -248,6 +255,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
 
       <Button onClick={handleSaveAll} className="mt-6">全ての変更を保存</Button>
       <Button onClick={handleReflectSchedule} className="mt-6 ml-4">スケジュールに反映</Button>
+      <Button onClick={handleGoBack} className="mt-6 ml-4">戻る</Button>
 
       {events.length > 0 && (
         <div className="mt-4">

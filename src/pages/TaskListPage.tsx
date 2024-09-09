@@ -5,6 +5,7 @@ import { API_ENDPOINTS } from "@/config/api";
 import TaskList from './TaskList';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import type { Task } from "@/Types/index";
+import SortableItem from './SortableItem'; // SortableItemをインポート
 
 interface TaskListPageProps {
   onSaveTasks: (tasks: Task[]) => Promise<void>;
@@ -64,24 +65,42 @@ const TaskListPage: React.FC<TaskListPageProps> = ({ onSaveTasks }) => {
   }   
   return (
     <div className='m-4'>
-    <h1 className='h1'>タスクリスト</h1>
-    {serverError && (
-      <Alert variant="destructive">
-        <AlertDescription>{serverError}</AlertDescription>
-      </Alert>
-    )}
-    {!serverError && (
+      <h1 className='h1'>タスクリストTaskListPage</h1>
+      {serverError && (
+        <Alert variant="destructive">
+          <AlertDescription>{serverError}</AlertDescription>
+        </Alert>
+      )}
+      {!serverError && (
         <TaskList
-        tasks={tasks}
-        setTasks={setTasks}
-        onSaveTasks={onSaveTasks}
-        handleDeleteTask={handleDeleteTask}
-        existingTasks={tasks} // 追加
-        chatResponse={[]}  // 追加、適切な値に置き換えてください
-        />
-    )}
-  </div>
-  )
+          tasks={tasks}
+          setTasks={setTasks}
+          onSaveTasks={onSaveTasks}
+          handleDeleteTask={handleDeleteTask}
+          existingTasks={tasks}
+          chatResponse={[]}
+        >
+          {tasks.map((task, index) => {
+            console.log("Rendering task:", task);  // デバッグ用のログ
+            return (
+              <SortableItem
+                key={task.id}
+                id={task.id}
+                task={task}
+                index={index}
+                onDelete={() => handleDeleteTask(task.id)}
+                editingId={null} // または適切な状態変数
+                editedTask={null} // または適切な状態変数
+                handleEdit={() => {}} // 適切な編集関数
+                handleSave={() => {}} // 適切な保存関数
+                  // 必要に応じて他のpropsを追加
+              />
+            );
+          })}
+        </TaskList>
+      )}
+    </div>
+  );
 };
 
 export default TaskListPage;
