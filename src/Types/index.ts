@@ -80,10 +80,9 @@ export interface Task {
   id: number;
   userId: number;
   goalId: number;
-  goal_id: number;
   name: string;
   description: string | null;
-  elapsedTime: number; // 追加
+  elapsedTime: number;
   order: number;
   reviewInterval: 'next_day' | '7_days' | '14_days' | '28_days' | '56_days' | 'completed';
   repetitionCount: number;
@@ -91,7 +90,7 @@ export interface Task {
   createdAt: string;
   updatedAt: string;
   taskTime?: number;
-  taskName?: string; // number から string に変更
+  taskName?: string;
   taskPriority?: number; 
 }
 

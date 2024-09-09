@@ -14,8 +14,7 @@ const SortableItem: React.FC<SortableItemProps> = ({
   handleSave,
   handleChange,
   handleDeleteTask,
-  index,
-  goalId
+  index
 }) => {
   const { attributes, listeners, setNodeRef, transform, transition } = useSortable({ id });
 

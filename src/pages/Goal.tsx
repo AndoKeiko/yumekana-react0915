@@ -99,7 +99,15 @@ import { API_ENDPOINTS } from "@/config/api";
 import type { Task, Goal } from "@/Types/index";
 
 
+// import {
+//   KeyboardSensor,
+//   PointerSensor,
+//   useSensor,
+//   useSensors,
+// } from "@dnd-kit/core";
 import {
+  DndContext,
+  closestCenter,
   KeyboardSensor,
   PointerSensor,
   useSensor,
@@ -111,13 +119,6 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
-// import SortableItem from "./SortableItem";
-
-// import { Calendar, momentLocalizer } from 'react-big-calendar';
-// import moment from 'moment';
-// import 'react-big-calendar/lib/css/react-big-calendar.css';
-// import SimpleSortableItem from "./SimpleSortableItem";
-import SortableItem from "./SortableItem";
 // const localizer = momentLocalizer(moment);
 
 interface UserResponse {
@@ -186,12 +187,12 @@ const Goal: React.FC<GoalProps> = () => {
     setValue("progressPercentage", progressPercentage);
   }, [calculateProgressPercentage, setValue]);
 
-  // const sensors = useSensors(
-  //   useSensor(PointerSensor),
-  //   useSensor(KeyboardSensor, {
-  //     coordinateGetter: sortableKeyboardCoordinates,
-  //   })
-  // );
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -247,60 +248,60 @@ const Goal: React.FC<GoalProps> = () => {
     }
   }, [userId, fetchGoals]);
 
-  // const handleDragEnd = (event: any) => {
-  //   const { active, over } = event;
+  const handleDragEnd = (event: any) => {
+    const { active, over } = event;
 
-  //   if (active.id !== over.id) {
-  //     setChatResponse((items) => {
-  //       const oldIndex = items.findIndex((item) => item.id === active.id);
-  //       const newIndex = items.findIndex((item) => item.id === over.id);
+    if (active.id !== over.id) {
+      setTasks((items) => {
+        const oldIndex = items.findIndex((item) => item.id === active.id);
+        const newIndex = items.findIndex((item) => item.id === over.id);
 
-  //       return arrayMove(items, oldIndex, newIndex).map((item, index) => ({
-  //         ...item,
-  //         order: index + 1  // taskOrder を order に変更
-  //       }));
-  //     });
-  //   }
-  // };
+        return arrayMove(items, oldIndex, newIndex).map((item, index) => ({
+          ...item,
+          order: index + 1
+        }));
+      });
+    }
+  };
 
   const handleSave = async (id: string | number) => {
     if (!editedTask) return;
 
     try {
-        const response = await axios.put<Task>(API_ENDPOINTS.UPDATE_TASK(Number(id)), editedTask);
-        const updatedTask: Task = response.data;
-        setTasks(prevTasks => prevTasks.map(task =>
-            task.id === Number(id) ? { ...task, ...updatedTask } : task
-        ));
-        setEditingId(null);
-        setEditedTask(null);
+      const response = await axios.put<Task>(API_ENDPOINTS.UPDATE_TASK(Number(id)), editedTask);
+      const updatedTask: Task = response.data;
+      setTasks(prevTasks => prevTasks.map(task =>
+        task.id === Number(id) ? { ...task, ...updatedTask } : task
+      ));
+      setEditingId(null);
+      setEditedTask(null);
     } catch (error) {
-        console.error("Failed to update task:", error);
-        setServerError("タスクの更新に失敗しました");
+      console.error("Failed to update task:", error);
+      setServerError("タスクの更新に失敗しました");
     }
-};
+  };
 
-const handleChange = (
-  e: React.ChangeEvent<HTMLInputElement> | { target: { value: string } },
-  field: string
-) => {
-  if (editedTask) {
-    setEditedTask({
-      ...editedTask,
-      [field]: field === "taskTime" || field === "taskPriority" ? Number(e.target.value) : e.target.value
-    });
-  }
-};
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement> | { target: { value: string } },
+    field: string
+  ) => {
+    if (editedTask) {
+      setEditedTask({
+        ...editedTask,
+        [field]: field === "taskTime" || field === "taskPriority" ? Number(e.target.value) : e.target.value
+      });
+    }
+  };
 
-const handleDeleteTask = async (id: string | number) => {
-  try {
-    await axios.delete(API_ENDPOINTS.DELETE_TASK(Number(id)));
-    setTasks(tasks.filter(task => task.id !== Number(id)));
-  } catch (error) {
-    console.error("Failed to delete task:", error);
-    setServerError("タスクの削除に失敗しました");
-  }
-};
+  const handleDeleteTask = async (id: string | number) => {
+    try {
+      await axios.delete(API_ENDPOINTS.DELETE_TASK(Number(id)));
+      setTasks(tasks.filter(task => task.id !== Number(id)));
+    } catch (error) {
+      console.error("Failed to delete task:", error);
+      setServerError("タスクの削除に失敗しました");
+    }
+  };
 
   // progressPercentageを計算
   useEffect(() => {
@@ -310,34 +311,34 @@ const handleDeleteTask = async (id: string | number) => {
     console.log("Calculated progress:", roundedProgress); // デバッグ用
   }, [totalTime, status, setValue]);
 
-    console.log("chatResponse updated:", chatResponse);
+  console.log("chatResponse updated:", chatResponse);
 
-    useEffect(() => {
-      if (chatResponse.length > 0) {
-        const transformedTasks = chatResponse.map((task, index) => ({
-          id: index + 1,
-          name: String(task.taskName ?? ""),
-          taskTime: task.taskTime ?? 0,
-          taskPriority: task.taskPriority,
-          order: index + 1,
-          userId: task.userId,
-          goalId: task.goalId, // goalId を goal_id に変更
-          description: task.description,
-          elapsedTime: task.elapsedTime,
-          reviewInterval: task.reviewInterval || 0,
-          repetitionCount: task.repetitionCount || 0,
-          lastNotificationSent: task.lastNotificationSent || null,
-          createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
-          updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
-        }));
-        setTasks(transformedTasks);
-      }
-    }, [chatResponse]);
-  
+  useEffect(() => {
+    if (chatResponse.length > 0) {
+      const transformedTasks = chatResponse.map((task, index) => ({
+        id: index + 1,
+        name: String(task.taskName ?? ""),
+        taskTime: task.taskTime ?? 0,
+        taskPriority: task.taskPriority,
+        order: index + 1,
+        userId: task.userId,
+        goalId: task.goalId,
+        description: task.description,
+        elapsedTime: task.elapsedTime,
+        reviewInterval: task.reviewInterval || 0,
+        repetitionCount: task.repetitionCount || 0,
+        lastNotificationSent: task.lastNotificationSent || null,
+        createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+        updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
+      }));
+      setTasks(transformedTasks);
+    }
+  }, [chatResponse]);
+
   useEffect(() => {
     console.log("tasks updated:", tasks);
   }, [tasks]);
-  
+
   useEffect(() => {
     if (chatResponse.length > 0 && tasks.length === 0) {
       setTasks(chatResponse);
@@ -357,7 +358,7 @@ const handleDeleteTask = async (id: string | number) => {
       setServerError("ユーザーIDが見つかりません。ログインしてください。");
       return;
     }
-  
+
     // if (data.totalTime === 0) {
     //   setServerError("総予定時間は必須です");
     //   return;
@@ -375,7 +376,7 @@ const handleDeleteTask = async (id: string | number) => {
       total_time: data.totalTime || 0,
       progress_percentage: data.progressPercentage || 0,
     };
-  
+
 
     console.log("送信データ:", JSON.stringify(submissionData, null, 2));
 
@@ -393,13 +394,13 @@ const handleDeleteTask = async (id: string | number) => {
       );
       console.log("サーバーレスポンス:", result.data);
       setResponse(result.data.message);
-  
+
       const goalId = result.data.Goals.id;
       if (!goalId) {
         throw new Error("goalId is undefined");
       }
       await axios.get('/sanctum/csrf-cookie');
-  
+
       const chatResult: any = await axios.post(
         API_ENDPOINTS.CHAT_GOAL(goalId),
         {
@@ -413,17 +414,17 @@ const handleDeleteTask = async (id: string | number) => {
         }
       );
       console.log("Sending chat request:", API_ENDPOINTS.CHAT_GOAL(goalId));
-  
+
       let parsedChatResponse;
       try {
         const cleanedResponse = chatResult.data.response
           .replace(/```json|```/g, "")
           .trim();
         parsedChatResponse = JSON.parse(cleanedResponse);
-  
+
         const newTotalTime = parsedChatResponse.reduce((sum: number, task: Task) => sum + task.taskTime, 0);
         setValue("totalTime", newTotalTime);
-  
+
         // const newStatus = await calculateStatus();
         // setValue("status", newStatus);
         // setValue("progressPercentage", newStatus);
@@ -437,7 +438,7 @@ const handleDeleteTask = async (id: string | number) => {
       } finally {
         setIsLoading(false);
       }
-  
+
 
       setChatResponse(parsedChatResponse);
       console.log("chatResponse:", chatResponse);
@@ -477,7 +478,7 @@ const handleDeleteTask = async (id: string | number) => {
     const selectedDate = new Date(value);
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-  
+
     if (selectedDate < today) {
       setValue(
         name as "periodStart" | "periodEnd",
@@ -499,7 +500,7 @@ const handleDeleteTask = async (id: string | number) => {
   //       periodStart: formatDate(goal.periodStart),
   //       periodEnd: formatDate(goal.periodEnd),
   //     });
-  
+
   //     try {
   //       const response = await axios.get<{ tasks: Task[] }>(API_ENDPOINTS.GOAL_TASKS(goal.id));
   //       setTasks(response.data.tasks);
@@ -511,7 +512,7 @@ const handleDeleteTask = async (id: string | number) => {
   //   },
   //   [reset]
   // );
-  
+
   /**
    * 日付文字列をYYYY-MM-DD形式にフォーマットする
    * @param {string} dateString - フォーマットする日付文字列
@@ -547,7 +548,7 @@ const handleDeleteTask = async (id: string | number) => {
   //   },
   //   [selectedGoal, setServerError, setTasks]
   // );
-  
+
 
   /**
    * 指定されたIDの目標を削除する
@@ -630,7 +631,7 @@ const handleDeleteTask = async (id: string | number) => {
       setServerError("未知のエラーが発生しました");
     }
   };
-  
+
 
   useEffect(() => {
     console.log("chatResponse updated:", chatResponse);
@@ -654,11 +655,11 @@ const handleDeleteTask = async (id: string | number) => {
       setTasks(transformedTasks);
     }
   }, [chatResponse]);
-  
+
   useEffect(() => {
     console.log("tasks updated:", tasks);
   }, [tasks]);
-  
+
   useEffect(() => {
     if (chatResponse.length > 0 && tasks.length === 0) {
       setTasks(chatResponse);
@@ -719,49 +720,49 @@ const handleDeleteTask = async (id: string | number) => {
     setEditingId(task.id.toString());  // number を string に変換
     setEditedTask({ ...task });
   };
-  
-  const transformTasks = (tasks: any[]): Task[] => {
-  return tasks.map((task, index) => ({
-    id: index + 1,
-    name: task.taskName,
-    taskTime: task.taskTime,
-    taskPriority: task.taskPriority,
-    order: index + 1,
-    userId: task.userId,
-    goalId: task.goalId,
-    description: task.description,
-    elapsedTime: task.elapsedTime,
-    reviewInterval: task.reviewInterval || 0,
-    repetitionCount: task.repetitionCount || 0,
-    lastNotificationSent: task.lastNotificationSent || null,
-    createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
-    updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
-  }));
-};
-if (errorMessage) {
-  return <div>{errorMessage}</div>;  // エラーメッセージを表示
-}
 
-if (!userId) {
-  return <div>Loading...</div>;  // ユーザーIDがまだ取得されていない場合
-}
+  const transformTasks = (tasks: any[]): Task[] => {
+    return tasks.map((task, index) => ({
+      id: index + 1,
+      name: task.taskName,
+      taskTime: task.taskTime,
+      taskPriority: task.taskPriority,
+      order: index + 1,
+      userId: task.userId,
+      goalId: task.goalId,
+      description: task.description,
+      elapsedTime: task.elapsedTime,
+      reviewInterval: task.reviewInterval || 0,
+      repetitionCount: task.repetitionCount || 0,
+      lastNotificationSent: task.lastNotificationSent || null,
+      createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+      updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
+    }));
+  };
+  if (errorMessage) {
+    return <div>{errorMessage}</div>;  // エラーメッセージを表示
+  }
+
+  if (!userId) {
+    return <div>Loading...</div>;  // ユーザーIDがまだ取得されていない場合
+  }
 
   console.log("Validation errors:", errors);
   console.log("chatResponse:", chatResponse);
 
   return (
     <>
-    <section className="section">
-      <h1 className="h1">近い未来の目標</h1>
-      <form onSubmit={handleSubmit(onSubmit)}>
-      <div className="my-5">
-          <Label htmlFor="name" className="w-full block text-left">目標</Label>
-          <Textarea
-            id="name"
-            {...register("name", { required: "目標名は必須です" })}
-          />
-          {errors.name && <p className="text-red-600 text-left">{errors.name.message}</p>}
-        </div>
+      <section className="section">
+        <h1 className="h1">近い未来の目標</h1>
+        <form onSubmit={handleSubmit(onSubmit)}>
+          <div className="my-5">
+            <Label htmlFor="name" className="w-full block text-left">目標</Label>
+            <Textarea
+              id="name"
+              {...register("name", { required: "目標名は必須です" })}
+            />
+            {errors.name && <p className="text-red-600 text-left">{errors.name.message}</p>}
+          </div>
 
           <div className="my-5">
             <Label
@@ -785,128 +786,125 @@ if (!userId) {
             )}
           </div>
           <div className="my-5">
-      <Label
-        htmlFor="periodStart"
-        className="textleft w-full block text-left"
-      >
-        目標期間（開始日）
-      </Label>
-      <Input
-        id="periodStart"
-        className="my-2"
-        type="date"
-        {...register("periodStart", {
-          required: "目標期間の開始日は必須です",
-          validate: validateDate,
-        })}
-        onChange={handleDateChange}
-      />
-      {errors.periodStart && (
-        <p className="text-red-600 text-left">
-          {errors.periodStart.message}
-        </p>
-      )}
-    </div>
-    <div className="my-5">
-      <Label
-        htmlFor="periodEnd"
-        className="textleft w-full block text-left"
-      >
-        目標期間（修了日）
-      </Label>
-      <Input
-        id="periodEnd"
-        className="my-2"
-        type="date"
-        {...register("periodEnd", {
-          required: "目標期間の終了日は必須です",
-          validate: validateDate,
-        })}
-        onChange={handleDateChange}
-      />
-      {errors.periodEnd && (
-        <p className="text-red-600 text-left">
-          {errors.periodEnd.message}
-        </p>
-      )}
-    </div>
-    <div className="my-5">
-      <Label htmlFor="description" className="w-full block text-left">
-        詳細
-      </Label>
-      <Textarea
-        id="description"
-        {...register("description")}
-      />
-    </div>
+            <Label
+              htmlFor="periodStart"
+              className="textleft w-full block text-left"
+            >
+              目標期間（開始日）
+            </Label>
+            <Input
+              id="periodStart"
+              className="my-2"
+              type="date"
+              {...register("periodStart", {
+                required: "目標期間の開始日は必須です",
+                validate: validateDate,
+              })}
+              onChange={handleDateChange}
+            />
+            {errors.periodStart && (
+              <p className="text-red-600 text-left">
+                {errors.periodStart.message}
+              </p>
+            )}
+          </div>
+          <div className="my-5">
+            <Label
+              htmlFor="periodEnd"
+              className="textleft w-full block text-left"
+            >
+              目標期間（修了日）
+            </Label>
+            <Input
+              id="periodEnd"
+              className="my-2"
+              type="date"
+              {...register("periodEnd", {
+                required: "目標期間の終了日は必須です",
+                validate: validateDate,
+              })}
+              onChange={handleDateChange}
+            />
+            {errors.periodEnd && (
+              <p className="text-red-600 text-left">
+                {errors.periodEnd.message}
+              </p>
+            )}
+          </div>
+          <div className="my-5">
+            <Label htmlFor="description" className="w-full block text-left">
+              詳細
+            </Label>
+            <Textarea
+              id="description"
+              {...register("description")}
+            />
+          </div>
 
-    <div className="my-5">
-      <Button type="submit" className="button" disabled={isLoading}>
-        {isLoading ? "送信中..." : "目標を設定"}
-      </Button>
-    </div>
-  </form>
-  {serverError && (
-    <Alert variant="destructive">
-      <AlertDescription>{serverError}</AlertDescription>
-    </Alert>
-  )}
-  {isLoading && <div className="loading">処理中...</div>}
-  {response && (
-    <div className="mt-4">
-      <p className="text-green-600">{response}</p>
-    </div>
-  )}
-        {tasks.length > 0 ? ( 
+          <div className="my-5">
+            <Button type="submit" className="button" disabled={isLoading}>
+              {isLoading ? "送信中..." : "目標を設定"}
+            </Button>
+          </div>
+        </form>
+        {serverError && (
+          <Alert variant="destructive">
+            <AlertDescription>{serverError}</AlertDescription>
+          </Alert>
+        )}
+        {isLoading && <div className="loading">処理中...</div>}
+        {response && (
+          <div className="mt-4">
+            <p className="text-green-600">{response}</p>
+          </div>
+        )}
+        {tasks.length > 0 ? (
+          <DndContext
+            sensors={sensors}
+            collisionDetection={closestCenter}
+            onDragEnd={handleDragEnd}
+          >
 
-<SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
-<table className="min-w-full bg-white">
-  <thead>
-    <tr>
-      <th className="border px-4 py-2">順序</th>
-      <th className="border px-4 py-2">タスク名</th>
-      <th className="border px-4 py-2">所要時間</th>
-      <th className="border px-4 py-2">優先度</th>
-      <th className="border px-4 py-2">アクション</th>
-    </tr>
-  </thead>
-  <tbody>
-  {tasks.map((task, index) => (
-                <SortableItem
-                  key={task.id || index}
-                  id={task.id}
-                  task={task}
-                  index={index}
-                  editingId={editingId}
-                  editedTask={editedTask}
-                  handleEdit={handleEdit}
-                  handleSave={handleSave}
-                  handleChange={handleChange}
-                  handleDeleteTask={handleDeleteTask}
-                />
-              ))}
-          {/* {tasks.map((task, index) => (
-        <SimpleSortableItem
-          key={task.id || index}
-          id={task.id} 
-          task={task}
-          index={index}
-        />
-      ))} */}
-  </tbody>
-</table>
-</SortableContext>
+            <SortableContext items={tasks.map((t) => t.id)} strategy={verticalListSortingStrategy}>
+              <table className="min-w-full bg-white">
+                <thead>
+                  <tr>
+                    <th className="border px-4 py-2">順序</th>
+                    <th className="border px-4 py-2">タスク名</th>
+                    <th className="border px-4 py-2">所要時間</th>
+                    <th className="border px-4 py-2">優先度</th>
+                    <th className="border px-4 py-2">アクション</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {tasks.map((task, index) => (
+                    <SortableItem
+                      key={task.id || index}
+                      id={task.id}
+                      task={task}
+                      index={index}
+                      editingId={editingId}
+                      editedTask={editedTask}
+                      handleEdit={handleEdit}
+                      handleSave={handleSave}
+                      handleChange={handleChange}
+                      handleDeleteTask={handleDeleteTask}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </SortableContext>
+          </DndContext>
+        ) : (
+          <p>タスクがありません。または読み込み中です。</p>
+        )}
 
-) : (
-  <p>タスクがありません。または読み込み中です。</p>
-)}
-
-</section>
-<Link to="/goallist">
-<Button>目標一覧を見る</Button>
-</Link>
-</>
-);
+      </section>
+      <Link to="/goallist">
+        <Button>目標一覧を見る</Button>
+      </Link>
+    </>
+  );
 };
 
 export default Goal;

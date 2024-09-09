@@ -219,11 +219,11 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
             </thead>
             <tbody>
               {sortedTasks
-                .filter(task => desiredGoalId === null || task.goalId === Number(desiredGoalId))  // goal_idで絞り込み
+                .filter(task => desiredGoalId === null || task.goalId === Number(desiredGoalId))
                 .map((task, index) => (
                   <SortableItem
-                    key={task.id}  // keyはtask.idを使用
-                    id={task.id}  // idもtask.idを使用
+                    key={task.id}
+                    id={task.id}
                     task={task as Task}
                     index={index}
                     editingId={editingId}
