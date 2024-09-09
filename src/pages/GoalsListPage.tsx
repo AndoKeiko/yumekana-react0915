@@ -102,9 +102,8 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
                 console.log("Clicked goal:あああ", goal);
                 handleGoalSelect(goal);
               }}
-              className={`flex items-center justify-between py-5 px-8 cursor-pointer ${
-                selectedGoal?.id === goal.id ? "bg-blue-100" : "hover:bg-gray-100"
-              }`}
+              className={`flex items-center justify-between py-5 px-8 cursor-pointer ${selectedGoal?.id === goal.id ? "bg-blue-100" : "hover:bg-gray-100"
+                }`}
             >
               <p className="text-left flex">{goal.name}</p>
               <p className="text-left flex">
@@ -121,7 +120,14 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
             </li>
           ))}
         </ul>
+
       )}
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => navigate(-1)} // 1ページ前に戻る
+        className="mb-4"
+      >前のページに戻る</Button>
     </section>
   );
 };
