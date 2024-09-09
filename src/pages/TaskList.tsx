@@ -59,7 +59,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
     const allTasks = [...existingTasks, ...chatResponse];
     const uniqueTasks = allTasks.reduce((acc, current) => {
       const x = acc.find(item => item.taskName === current.taskName);
-      const taskWithGoalId = { ...current, goalId: current.goal_id };
+      const taskWithGoalId = { ...current, goalId: current.goalId };
       if (!x) {
         return acc.concat([taskWithGoalId]);
       } else {
@@ -213,7 +213,7 @@ const TaskList: React.FC<TaskListProps> = ({ tasks, setTasks, onSaveTasks, exist
                 <th className="border px-4 py-2">順序</th>
                 <th className="border px-4 py-2">タスク名<button onClick={() => requestSort("taskName")}>▲▼</button></th>
                 <th className="border px-4 py-2">所要時間<button onClick={() => requestSort("taskTime")}>▲▼</button></th>
-                <th className="border px-4 py-2">優先度<button onClick={() => requestSort("tasktaskPriority")}>▲▼</button></th>
+                <th className="border px-4 py-2">優先度<button onClick={() => requestSort("taskPriority")}>▲▼</button></th>
                 <th className="border px-4 py-2">アクション</th>
               </tr>
             </thead>

@@ -12,7 +12,7 @@ import axios from 'axios';
 type LoginProps = {
   // ここにプロップの型を定義
 };
-const Login: React.FC<LoginProps> = (props) => {
+const Login: React.FC<LoginProps> = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch();
   const { register, handleSubmit, formState: { errors } } = useForm<LoginForm>();
@@ -98,7 +98,7 @@ const Login: React.FC<LoginProps> = (props) => {
           {errors.email && <span className="text-red-600 text-sm">{errors.email.message as string}</span>}
         </div>
         <div className="mb-6">
-          <label htmlFor="password" autoComplete="current-password" className="block text-sm font-medium text-gray-700">パスワード</label>
+          <label htmlFor="password" className="block text-sm font-medium text-gray-700">パスワード</label>
           <input
             {...register("password", {
               required: "パスワードは必須です",
@@ -107,8 +107,7 @@ const Login: React.FC<LoginProps> = (props) => {
                 message: "6文字以上入力してください",
               },
             })}
-            type="password"
-            className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
+            type="password" autoComplete="current-password" className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
           />
           {errors.password && <span className="text-red-600 text-sm">{errors.password.message as string}</span>}
         </div>

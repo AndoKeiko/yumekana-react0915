@@ -25,7 +25,7 @@ const SimpleSortableItem: React.FC<SimpleSortableItemProps> = ({ id, task, index
       <td className="border px-4 py-2">{index + 1}</td>
       <td className="border px-4 py-2">{task.taskName}</td>
       <td className="border px-4 py-2">{task.taskTime}</td>
-      <td className="border px-4 py-2">{task.tasktaskPriority}</td>
+      <td className="border px-4 py-2">{task.taskPriority}</td>
       <td className="border px-4 py-2">
         {/* 必要に応じてアクションボタンを追加 */}
       </td>

@@ -34,6 +34,8 @@ export interface SortableItemProps {
 export interface TaskItem {
   id: number;
   name: string; // 追加
+  TaskItem: string; // 追加
+  taskPriority: string;
   time: string; // 追加
   priority: string; // 追加
 }
@@ -141,7 +143,7 @@ export interface Goal {
   created_at: string;
   updated_at: string;
   taskTime?: number; // ここに追加
-  tasktaskPriority?: number; // ここに追加
+  taskPriority?: number; // ここに追加
 }
 
 

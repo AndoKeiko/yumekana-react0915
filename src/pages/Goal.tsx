@@ -87,7 +87,7 @@
 import React, { useState, useCallback, useEffect } from "react";
 import { useUser } from '../hooks/useUser';
 import { useForm } from "react-hook-form";
-import axios, { AxiosError } from "axios";
+import axios from 'axios';
 import "../App.css";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
@@ -113,12 +113,12 @@ import {
 } from "@dnd-kit/sortable";
 // import SortableItem from "./SortableItem";
 
-import { Calendar, momentLocalizer } from 'react-big-calendar';
-import moment from 'moment';
-import 'react-big-calendar/lib/css/react-big-calendar.css';
+// import { Calendar, momentLocalizer } from 'react-big-calendar';
+// import moment from 'moment';
+// import 'react-big-calendar/lib/css/react-big-calendar.css';
 // import SimpleSortableItem from "./SimpleSortableItem";
 import SortableItem from "./SortableItem";
-const localizer = momentLocalizer(moment);
+// const localizer = momentLocalizer(moment);
 
 interface UserResponse {
   users: { id: number }[];
@@ -144,8 +144,8 @@ const Goal: React.FC<GoalProps> = () => {
   const [editedTask, setEditedTask] = useState<Task | null>(null);
   const { userId, setUserIdAction } = useUser();
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-  const [calculatedTotalTime, setCalculatedTotalTime] = useState<number>(0);
-  const [calculatedProgressPercentage, setCalculatedProgressPercentage] = useState<number>(0);
+  // const [calculatedTotalTime, setCalculatedTotalTime] = useState<number>(0);
+  // const [calculatedProgressPercentage, setCalculatedProgressPercentage] = useState<number>(0);
 
   const {
     register,
@@ -186,12 +186,12 @@ const Goal: React.FC<GoalProps> = () => {
     setValue("progressPercentage", progressPercentage);
   }, [calculateProgressPercentage, setValue]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  // const sensors = useSensors(
+  //   useSensor(PointerSensor),
+  //   useSensor(KeyboardSensor, {
+  //     coordinateGetter: sortableKeyboardCoordinates,
+  //   })
+  // );
 
   const fetchUserData = useCallback(async () => {
     try {
@@ -247,21 +247,21 @@ const Goal: React.FC<GoalProps> = () => {
     }
   }, [userId, fetchGoals]);
 
-  const handleDragEnd = (event: any) => {
-    const { active, over } = event;
+  // const handleDragEnd = (event: any) => {
+  //   const { active, over } = event;
 
-    if (active.id !== over.id) {
-      setChatResponse((items) => {
-        const oldIndex = items.findIndex((item) => item.id === active.id);
-        const newIndex = items.findIndex((item) => item.id === over.id);
+  //   if (active.id !== over.id) {
+  //     setChatResponse((items) => {
+  //       const oldIndex = items.findIndex((item) => item.id === active.id);
+  //       const newIndex = items.findIndex((item) => item.id === over.id);
 
-        return arrayMove(items, oldIndex, newIndex).map((item, index) => ({
-          ...item,
-          order: index + 1  // taskOrder を order に変更
-        }));
-      });
-    }
-  };
+  //       return arrayMove(items, oldIndex, newIndex).map((item, index) => ({
+  //         ...item,
+  //         order: index + 1  // taskOrder を order に変更
+  //       }));
+  //     });
+  //   }
+  // };
 
   const handleSave = async (id: string | number) => {
     if (!editedTask) return;
@@ -287,7 +287,7 @@ const handleChange = (
   if (editedTask) {
     setEditedTask({
       ...editedTask,
-      [field]: field === "taskTime" || field === "tasktaskPriority" ? Number(e.target.value) : e.target.value
+      [field]: field === "taskTime" || field === "taskPriority" ? Number(e.target.value) : e.target.value
     });
   }
 };
@@ -321,7 +321,7 @@ const handleDeleteTask = async (id: string | number) => {
           taskPriority: task.taskPriority,
           order: index + 1,
           userId: task.userId,
-          goalId: task.goalId,
+          goalId: task.goalId, // goalId を goal_id に変更
           description: task.description,
           elapsedTime: task.elapsedTime,
           reviewInterval: task.reviewInterval || 0,
@@ -491,26 +491,26 @@ const handleDeleteTask = async (id: string | number) => {
    * @param {Goal} goal - 選択された目標
    * @returns {Promise<void>}
    */
-  const handleGoalSelect = useCallback(
-    async (goal: Goal) => {
-      setSelectedGoal(goal);
-      reset({
-        ...goal,
-        periodStart: formatDate(goal.periodStart),
-        periodEnd: formatDate(goal.periodEnd),
-      });
+  // const handleGoalSelect = useCallback(
+  //   async (goal: Goal) => {
+  //     setSelectedGoal(goal);
+  //     reset({
+  //       ...goal,
+  //       periodStart: formatDate(goal.periodStart),
+  //       periodEnd: formatDate(goal.periodEnd),
+  //     });
   
-      try {
-        const response = await axios.get<{ tasks: Task[] }>(API_ENDPOINTS.GOAL_TASKS(goal.id));
-        setTasks(response.data.tasks);
-        console.log("Submitted goalId:", response);
-      } catch (error) {
-        console.error("Failed to fetch tasks:", error);
-        setServerError("タスクの取得に失敗しました");
-      }
-    },
-    [reset]
-  );
+  //     try {
+  //       const response = await axios.get<{ tasks: Task[] }>(API_ENDPOINTS.GOAL_TASKS(goal.id));
+  //       setTasks(response.data.tasks);
+  //       console.log("Submitted goalId:", response);
+  //     } catch (error) {
+  //       console.error("Failed to fetch tasks:", error);
+  //       setServerError("タスクの取得に失敗しました");
+  //     }
+  //   },
+  //   [reset]
+  // );
   
   /**
    * 日付文字列をYYYY-MM-DD形式にフォーマットする
@@ -527,26 +527,26 @@ const handleDeleteTask = async (id: string | number) => {
    * @param {any} tasksToSave - 保存するタスク配列
    * @returns {Promise<void>}
    */
-  const saveTasks = useCallback(
-    async (tasksToSave: Task[]) => {
-      if (!selectedGoal) {
-        console.error("Selected goal is not set");
-        setServerError("目標が選択されていません");
-        return;
-      }
-      try {
-        await axios.post(API_ENDPOINTS.SAVE_TASKS(selectedGoal.id), {
-          tasks: tasksToSave,
-          userId: localStorage.getItem("userId"),
-        });
-        setTasks(tasksToSave);
-      } catch (error) {
-        console.error("Failed to save tasks:", error);
-        setServerError("タスクの保存に失敗しました");
-      }
-    },
-    [selectedGoal, setServerError, setTasks]
-  );
+  // const saveTasks = useCallback(
+  //   async (tasksToSave: Task[]) => {
+  //     if (!selectedGoal) {
+  //       console.error("Selected goal is not set");
+  //       setServerError("目標が選択されていません");
+  //       return;
+  //     }
+  //     try {
+  //       await axios.post(API_ENDPOINTS.SAVE_TASKS(selectedGoal.id), {
+  //         tasks: tasksToSave,
+  //         userId: localStorage.getItem("userId"),
+  //       });
+  //       setTasks(tasksToSave);
+  //     } catch (error) {
+  //       console.error("Failed to save tasks:", error);
+  //       setServerError("タスクの保存に失敗しました");
+  //     }
+  //   },
+  //   [selectedGoal, setServerError, setTasks]
+  // );
   
 
   /**
@@ -554,39 +554,39 @@ const handleDeleteTask = async (id: string | number) => {
    * @param {number | undefined} id - 削除する目標のID
    * @returns {Promise<void>}
    */
-  const handleGoalDelete = async (id: number | undefined) => {
-    if (id === undefined) {
-      console.log("Goal ID is undefined");
-      setServerError("目標の削除に失敗しました：IDが無効です");
-      return;
-    }
-    try {
-      await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
-      setGoals(goals.filter((goal) => goal.id !== id));
-      if (selectedGoal && selectedGoal.id === id) {
-        setSelectedGoal(null);
-        reset({});
-      }
-    } catch (error) {
-      console.error("Failed to delete goal:", error);
-      setServerError("目標の削除に失敗しました");
-    }
-  };
+  // const handleGoalDelete = async (id: number | undefined) => {
+  //   if (id === undefined) {
+  //     console.log("Goal ID is undefined");
+  //     setServerError("目標の削除に失敗しました：IDが無効です");
+  //     return;
+  //   }
+  //   try {
+  //     await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
+  //     setGoals(goals.filter((goal) => goal.id !== id));
+  //     if (selectedGoal && selectedGoal.id === id) {
+  //       setSelectedGoal(null);
+  //       reset({});
+  //     }
+  //   } catch (error) {
+  //     console.error("Failed to delete goal:", error);
+  //     setServerError("目標の削除に失敗しました");
+  //   }
+  // };
 
   /**
    * 指定されたIDの目標を削除し、状態を更新する
    * @param {number} id - 削除する目標のID
    * @returns {Promise<void>}
    */
-  const onGoalDelete = async (id: number) => {
-    try {
-      await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
-      setGoals(goals.filter((goal) => goal.id !== id));
-    } catch (error) {
-      console.error("Failed to delete goal:", error);
-      setServerError("目標の削除に失敗しました");
-    }
-  };
+  // const onGoalDelete = async (id: number) => {
+  //   try {
+  //     await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
+  //     setGoals(goals.filter((goal) => goal.id !== id));
+  //   } catch (error) {
+  //     console.error("Failed to delete goal:", error);
+  //     setServerError("目標の削除に失敗しました");
+  //   }
+  // };
 
   /**
    * 指定された目標IDに対してチャットリクエストを送信する
@@ -594,23 +594,23 @@ const handleDeleteTask = async (id: string | number) => {
    * @param {string} message - 送信するメッセージ
    * @returns {Promise<any>} チャットレスポンス
    */
-  const sendChatRequest = async (id: number, message: string) => {
-    try {
-      const response = await axios.post(
-        `${API_ENDPOINTS.CHAT_GOAL(id)}`,
-        { message },
-        {
-          headers: {
-            "Content-Type": "application/json",
-          },
-        }
-      );
-      return response.data;
-    } catch (error) {
-      console.error("Chat request failed:", error);
-      throw error;
-    }
-  };
+  // const sendChatRequest = async (id: number, message: string) => {
+  //   try {
+  //     const response = await axios.post(
+  //       `${API_ENDPOINTS.CHAT_GOAL(id)}`,
+  //       { message },
+  //       {
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //         },
+  //       }
+  //     );
+  //     return response.data;
+  //   } catch (error) {
+  //     console.error("Chat request failed:", error);
+  //     throw error;
+  //   }
+  // };
   /**
    * エラーを処理し、適切なエラーメッセージを設定する
    * @param {unknown} error - 処理するエラーオブジェクト
@@ -639,7 +639,7 @@ const handleDeleteTask = async (id: string | number) => {
         id: index + 1,
         name: String(task.taskName ?? ""),  // taskName を使用
         taskTime: task.taskTime ?? 0,  // taskTime を使用
-        taskPriority: task.tasktaskPriority,  // tasktaskPriority を使用
+        taskPriority: task.taskPriority,  // taskPriority を使用
         order: index + 1,
         userId: task.userId,
         goalId: task.goalId,
@@ -725,7 +725,7 @@ const handleDeleteTask = async (id: string | number) => {
     id: index + 1,
     name: task.taskName,
     taskTime: task.taskTime,
-    taskPriority: task.tasktaskPriority,
+    taskPriority: task.taskPriority,
     order: index + 1,
     userId: task.userId,
     goalId: task.goalId,

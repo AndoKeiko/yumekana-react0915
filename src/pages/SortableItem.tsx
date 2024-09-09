@@ -56,17 +56,17 @@ const SortableItem: React.FC<SortableItemProps> = ({
       <td className="border px-4 py-2">
         {isEditing ? (
           <select
-            value={String(editedTask?.tasktaskPriority || 1)}
-            onChange={(e) => handleChange(e, "tasktaskPriority")}
+            value={String(editedTask?.taskPriority || 1)}
+            onChange={(e) => handleChange(e, "taskPriority")}
             className="w-full border rounded px-2 py-1"
           >
             <option value="1">低</option>
             <option value="2">中</option>
             <option value="3">高</option>
           </select>
-        ) : task.tasktaskPriority === 1 ? (
+        ) : task.taskPriority === 1 ? (
           "低"
-        ) : task.tasktaskPriority === 2 ? (
+        ) : task.taskPriority === 2 ? (
           "中"
         ) : (
           "高"

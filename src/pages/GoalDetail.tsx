@@ -48,7 +48,7 @@ const GoalDetail: React.FC = () => {
               <tr key={task.id}>
                 <td>{task.taskName}</td>
                 <td>{task.taskTime}</td>
-                <td>{task.tasktaskPriority}</td>
+                <td>{task.taskPriority}</td>
               </tr>
             ))}
           </tbody>
