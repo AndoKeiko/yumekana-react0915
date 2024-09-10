@@ -6,24 +6,38 @@ export const useCsrfToken = () => {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCsrfToken = async () => {
+    const fetchCsrfToken = async (retries = 3) => {
       try {
-        // CSRFクッキーを取得
+        console.log('CSRFトークン取得開始');
         await axios.get('/sanctum/csrf-cookie', { withCredentials: true });
         
-        // CSRFトークンをクッキーから取得
-        const token = document.cookie.split('; ').find(row => row.startsWith('XSRF-TOKEN'))?.split('=')[1];
+        // クッキーが設定されるのを待つ時間を延長
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const token = document.cookie
+          .split('; ')
+          .find(row => row.startsWith('XSRF-TOKEN'))
+          ?.split('=')[1];
 
         if (token) {
-          // Axiosのデフォルトヘッダーにトークンを設定
-          axios.defaults.headers.common['X-XSRF-TOKEN'] = token;
-          setCsrfToken(token);
+          const decodedToken = decodeURIComponent(token);
+          axios.defaults.headers.common['X-XSRF-TOKEN'] = decodedToken;
+          setCsrfToken(decodedToken);
+          console.log('CSRFトークンが正常に取得されました:', decodedToken);
         } else {
-          throw new Error('CSRF token not found in cookies');
+          console.log('現在のクッキー:', document.cookie);
+          if (retries > 0) {
+            console.log(`CSRFトークンが見つかりません。再試行中... (残り${retries}回)`);
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            await fetchCsrfToken(retries - 1);
+          } else {
+            throw new Error('複数回の試行後もCSRFトークンの取得に失敗しました');
+          }
         }
       } catch (error) {
-        console.error('CSRFトークンの取得に失敗しました:', error);
-        setError('CSRFトークンの取得に失敗しました。');
+        console.error('CSRFトークンの取得に失敗:', error);
+        console.log('現在のクッキー:', document.cookie);
+        setError(`CSRFトークンの取得に失敗しました。エラー詳細: ${error instanceof Error ? error.message : String(error)}`);
       }
     };
 

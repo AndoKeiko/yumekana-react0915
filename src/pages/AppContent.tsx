@@ -30,24 +30,24 @@ function AppContent() {
   const { csrfToken, error: csrfError } = useCsrfToken();
 
 
-  useEffect(() => {
-    const getCsrfToken = async () => {
-      try {
-        await axios.get('/sanctum/csrf-cookie', { withCredentials: true });
-        console.log('CSRF token fetched successfully');
-        const xsrfToken = document.cookie
-          .split('; ')
-          .find(row => row.startsWith('XSRF-TOKEN'))
-          ?.split('=')[1];
-        if (xsrfToken) {
-          axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrfToken;
-        }
-      } catch (error) {
-        console.error('Failed to get CSRF token', error);
-      }
-    };
-    getCsrfToken();
-  }, []);
+  // useEffect(() => {
+  //   const getCsrfToken = async () => {
+  //     try {
+  //       await axios.get('/sanctum/csrf-cookie', { withCredentials: true });
+  //       console.log('CSRF token fetched successfully');
+  //       const xsrfToken = document.cookie
+  //         .split('; ')
+  //         .find(row => row.startsWith('XSRF-TOKEN'))
+  //         ?.split('=')[1];
+  //       if (xsrfToken) {
+  //         axios.defaults.headers.common['X-XSRF-TOKEN'] = xsrfToken;
+  //       }
+  //     } catch (error) {
+  //       console.error('Failed to get CSRF token', error);
+  //     }
+  //   };
+  //   getCsrfToken();
+  // }, []);
 
 
   // useEffect(() => {

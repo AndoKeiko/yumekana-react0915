@@ -4,7 +4,7 @@ import { API_ENDPOINTS } from "@/config/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { FaTrashCan } from "react-icons/fa6";
+import { FaTrashCan, FaArrowLeft, FaArrowRight } from "react-icons/fa6"; // FaArrowRightを追加
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import type { GoalItem } from "@/Types/index";
@@ -24,6 +24,8 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
   const [selectedGoal, setSelectedGoal] = useState<GoalItem | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [currentPage, setCurrentPage] = useState<number>(1); // 現在のページ番号
+  const itemsPerPage = 10; // 1ページあたりのアイテム数
   const navigate = useNavigate();
 
   const formatDateRange = useCallback((start: string, end: string) => {
@@ -77,10 +79,24 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
     }
   };
 
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  const paginatedGoals = goals.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
+
   if (isLoading) return <div>読み込み中...</div>;
 
   return (
     <section className="section">
+      <Button
+        variant="ghost"
+        size="icon"
+        onClick={() => navigate(-1)} // 1ページ前に戻る
+        className="mb-4"
+      >
+        <FaArrowLeft className="h-4 w-4" />
+      </Button>
       <h2 className="h2">目標一覧GoalListPage</h2>
       {serverError && (
         <Alert>
@@ -95,7 +111,7 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
         </Alert>
       ) : (
         <ul>
-          {goals.map((goal) => (
+          {paginatedGoals.map((goal) => (
             <li
               key={goal.id}
               onClick={() => {
@@ -120,14 +136,29 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
             </li>
           ))}
         </ul>
-
       )}
-      <Button
-        variant="ghost"
-        size="icon"
-        onClick={() => navigate(-1)} // 1ページ前に戻る
-        className="mb-4"
-      >前のページに戻る</Button>
+      <div className="flex justify-between mt-4">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handlePageChange(currentPage - 1)}
+          disabled={currentPage === 1}
+        >
+          <FaArrowLeft className="h-4 w-4" />
+        </Button>
+        <span>ページ {currentPage}</span>
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => handlePageChange(currentPage + 1)}
+          disabled={currentPage * itemsPerPage >= goals.length}
+        >
+          <FaArrowRight className="h-4 w-4" />
+        </Button>
+      </div>
+
+
+      <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mb-4">前のページに戻る</Button>
     </section>
   );
 };
