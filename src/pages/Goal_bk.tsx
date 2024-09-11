@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback, useEffect } from "react";
 import { useUser } from '../hooks/useUser';
 import { useForm } from "react-hook-form";
@@ -18,6 +19,12 @@ import dayGridPlugin from '@fullcalendar/daygrid';
 import timeGridPlugin from '@fullcalendar/timegrid';
 import interactionPlugin from '@fullcalendar/interaction';
 
+// import {
+//   KeyboardSensor,
+//   PointerSensor,
+//   useSensor,
+//   useSensors,
+// } from "@dnd-kit/core";
 import {
   DndContext,
   closestCenter,
@@ -33,16 +40,23 @@ import {
   sortableKeyboardCoordinates,
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
+// const localizer = momentLocalizer(moment);
 
 interface UserResponse {
   users: { id: number }[];
 }
 
+// GoalPropsの定義
 interface GoalProps {
   goalId?: number;
 }
 
+
+//Goalコンポーネント
 const Goal: React.FC<GoalProps> = () => {
+  //状態変数の定義
+  // const [data, setData] = useState<any>(null);
+  // const [error, setError] = useState<Error | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [response, setResponse] = useState<string>("");
   const [chatResponse, setChatResponse] = useState<Task[]>([]);
@@ -57,7 +71,9 @@ const Goal: React.FC<GoalProps> = () => {
   const [showSchedule, setShowSchedule] = useState(false);
   const { reset } = useForm();
   const [hoursPerDay, setHoursPerDay] = useState<number>(8);
-  const [startTime, setStartTime] = useState<string>("09:00");
+const [startTime, setStartTime] = useState<string>("09:00");
+  // const [calculatedTotalTime, setCalculatedTotalTime] = useState<number>(0);
+  // const [calculatedProgressPercentage, setCalculatedProgressPercentage] = useState<number>(0);
 
   const setTasksCallback = useCallback((newTasks: Task[]) => {
     setTasks(newTasks);
@@ -87,15 +103,15 @@ const Goal: React.FC<GoalProps> = () => {
     },
   });
 
+  // 期間の開始日と終了日を監視
   const status = watch("status");
   const totalTime = watch("totalTime");
 
   const onGoalDelete = useCallback(async (id: number) => {
-    console.log("onGoalDelete called with id:", id); // デバッグログ
     try {
-      console.log("Sending delete request to:", API_ENDPOINTS.DELETE_GOAL(id)); // デバッグログ
       await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
       console.log('Goal deleted successfully');
+      // 削除後の処理（例：状態の更新）
       setGoals(prevGoals => prevGoals.filter(goal => goal.id !== id));
       if (selectedGoal && selectedGoal.id === id) {
         setSelectedGoal(null);
@@ -105,20 +121,31 @@ const Goal: React.FC<GoalProps> = () => {
       setServerError("目標の削除に失敗しました");
     }
   }, [selectedGoal]);
-
-  const handleGoalDelete = useCallback(async (id: number, event: React.MouseEvent) => {
-    event.stopPropagation();
-    console.log("handleGoalDelete called with id:", id); // デバッグログ
+  /**
+   * 指定されたIDの目標を削除する
+   * @param {number | undefined} id - 削除する目標のID
+   * @returns {Promise<void>}
+   */
+const handleGoalDelete = useCallback(async (id: number, event: React.MouseEvent) => {
+  event.stopPropagation();
+  console.log("handleGoalDelete called with id:", id); // デバッグログ
+  if (typeof onGoalDelete === 'function') {
     try {
       await onGoalDelete(id);
       console.log("onGoalDelete completed successfully"); // デバッグログ
+      // ... 残りのコード
     } catch (error) {
       console.error("Failed to delete goal:", error);
       setServerError("目標の削除に失敗しました");
     }
-  }, [onGoalDelete]);
+  } else {
+    console.error("onGoalDelete is not a function");
+    setServerError("目標の削除機能が利用できません");
+  }
+}, [onGoalDelete]);
 
   const handleExportToSchedule = () => {
+    // スケジュールに書き出す処理をここに追加
     console.log("スケジュールに書き出す");
     console.log("Tasks:", tasks);
     setShowSchedule(true);
@@ -128,6 +155,7 @@ const Goal: React.FC<GoalProps> = () => {
     setShowSchedule(false);
   };
 
+  // 進捗状況を計算する関数
   const calculateProgressPercentage = useCallback(() => {
     if (totalTime > 0) {
       const progress = (status / totalTime) * 100;
@@ -166,6 +194,11 @@ const Goal: React.FC<GoalProps> = () => {
     }
   }, [setUserIdAction]);
 
+
+  /**
+   * ログインユーザーの全ての目標を取得する関数
+   * @returns {Promise<void>}
+   */
   const fetchGoals = useCallback(async () => {
     if (!userId) {
       console.error("User ID not found");
@@ -184,6 +217,8 @@ const Goal: React.FC<GoalProps> = () => {
       setIsLoading(false);
     }
   }, [userId]);
+
+
 
   useEffect(() => {
     fetchUserData();
@@ -250,11 +285,12 @@ const Goal: React.FC<GoalProps> = () => {
     }
   };
 
+  // progressPercentageを計算
   useEffect(() => {
     const calculatedProgress = totalTime > 0 ? (status / totalTime) * 100 : 0;
     const roundedProgress = Math.min(100, Math.max(0, Math.round(calculatedProgress)));
     setValue("progressPercentage", roundedProgress);
-    console.log("Calculated progress:", roundedProgress);
+    console.log("Calculated progress:", roundedProgress); // デバッグ用
   }, [totalTime, status, setValue]);
 
   console.log("chatResponse updated:", chatResponse);
@@ -291,6 +327,12 @@ const Goal: React.FC<GoalProps> = () => {
     console.log("tasks updated:あああ", tasks);
   }, [tasks]);
 
+  /**
+   * 新しい目標を作成し、AIを使用して関連タスクを生成する
+   * @param {Goal} data - フォームから送信された目標データ
+   * @returns {Promise<void>}
+   */
+  //onSubmit関数の定義
   const onSubmit = async (data: Goal) => {
     console.log("onSubmit関数が呼び出されました", data);
     console.log("Current userId:", userId);
@@ -298,6 +340,11 @@ const Goal: React.FC<GoalProps> = () => {
       setServerError("ユーザーIDが見つかりません。ログインしてください。");
       return;
     }
+
+    // if (data.totalTime === 0) {
+    //   setServerError("総予定時間は必須です");
+    //   return;
+    // }
 
     console.log("onSubmit関数が呼び出されました");
     const submissionData = {
@@ -312,7 +359,9 @@ const Goal: React.FC<GoalProps> = () => {
       progress_percentage: data.progressPercentage || 0,
     };
 
+
     console.log("送信データ:", JSON.stringify(submissionData, null, 2));
+
 
     try {
       setIsLoading(true);
@@ -358,6 +407,9 @@ const Goal: React.FC<GoalProps> = () => {
         const newTotalTime = parsedChatResponse.reduce((sum: number, task: Task) => sum + (task.taskTime ?? 0), 0);
         setValue("totalTime", newTotalTime);
 
+        // const newStatus = await calculateStatus();
+        // setValue("status", newStatus);
+        // setValue("progressPercentage", newStatus);
       } catch (error) {
         handleError(error);
         console.error("エラー:", error);
@@ -370,9 +422,11 @@ const Goal: React.FC<GoalProps> = () => {
         setIsLoading(false);
       }
 
+
       setChatResponse(parsedChatResponse);
       console.log("chatResponse:", chatResponse);
       await fetchGoals();
+      // reset();
     } catch (error: unknown) {
       if (axios.isAxiosError(error)) {
         console.error("Axios エラーレスポンス:", error.response.data);
@@ -386,6 +440,11 @@ const Goal: React.FC<GoalProps> = () => {
     }
   };
 
+  /**
+   * 日付が今日以降であることを確認する
+   * @param {string} value - 検証する日付文字列
+   * @returns {boolean | string} 検証結果またはエラーメッセージ
+   */
   const validateDate = (value: string) => {
     const selectedDate = new Date(value);
     const today = new Date();
@@ -393,6 +452,10 @@ const Goal: React.FC<GoalProps> = () => {
     return selectedDate >= today || "開始日は今日以降の日付を選択してください";
   };
 
+  /**
+   * 日付入力の変更を処理し、必要に応じて今日の日付に設定する
+   * @param {React.ChangeEvent<HTMLInputElement>} e - 日付入力変更イベント
+   */
   const handleDateChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const selectedDate = new Date(value);
@@ -407,6 +470,11 @@ const Goal: React.FC<GoalProps> = () => {
     }
   };
 
+  /**
+   * 選択された目標を設定し、関連するタスクを取得する
+   * @param {Goal} goal - 選択された目標
+   * @returns {Promise<void>}
+   */
   const handleGoalSelect = useCallback(
     async (goal: Goal) => {
       setSelectedGoal(goal);
@@ -428,41 +496,256 @@ const Goal: React.FC<GoalProps> = () => {
     [reset, setTasksCallback, setServerErrorCallback]
   );
 
+  /**
+   * 日付文字列をYYYY-MM-DD形式にフォーマットする
+   * @param {string} dateString - フォーマットする日付文字列
+   * @returns {string} フォーマットされた日付文字列
+   */
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toISOString().split("T")[0];
   };
 
+  /**
+   * 編集されたタスクをサーバーに保存する
+   * @param {any} tasksToSave - 保存するタスク配列
+   * @returns {Promise<void>}
+   */
+  // const saveTasks = useCallback(
+  //   async (tasksToSave: Task[]) => {
+  //     if (!selectedGoal) {
+  //       console.error("Selected goal is not set");
+  //       setServerError("目標が選択されていません");
+  //       return;
+  //     }
+  //     try {
+  //       await axios.post(API_ENDPOINTS.SAVE_TASKS(selectedGoal.id), {
+  //         tasks: tasksToSave,
+  //         userId: localStorage.getItem("userId"),
+  //       });
+  //       setTasks(tasksToSave);
+  //     } catch (error) {
+  //       console.error("Failed to save tasks:", error);
+  //       setServerError("タスクの保存に失敗しました");
+  //     }
+  //   },
+  //   [selectedGoal, setServerError, setTasks]
+  // );
+
+
+
+  /**
+   * 指定されたIDの目標を削除し、状態を更新する
+   * @param {number} id - 削除する目標のID
+   * @returns {Promise<void>}
+   */
+  const onGoalDelete = async (id: number) => {
+    console.log("onGoalDelete called with id:", id); // デバッグログ
+    try {
+      console.log("Sending delete request to:", API_ENDPOINTS.DELETE_GOAL(id)); // デバッグログ
+      const response = await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
+      console.log("Delete response:", response); // デバッグログ
+      setGoals(goals.filter((goal) => goal.id !== id));
+    } catch (error) {
+      console.error("Failed to delete goal:", error);
+      if (axios.isAxiosError(error)) {
+        setServerError(`目標の削除に失敗しました: ${error.response?.status} ${error.response?.statusText}`);
+      } else {
+        setServerError(`目標の削除に失敗しました: ${error instanceof Error ? error.message : String(error)}`);
+      }
+    }
+  };
+
+  /**
+   * 指定された目標IDに対してチャットリクエストを送信する
+   * @param {number} goalId - 目標ID
+   * @param {string} message - 送信するメッセージ
+   * @returns {Promise<any>} チャットレスポンス
+   */
+  const sendChatRequest = async (id: number, message: string) => {
+    try {
+      const response = await axios.post(
+        `${API_ENDPOINTS.CHAT_GOAL(id)}`,
+        { message },
+        {
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      );
+      return response.data;
+    } catch (error) {
+      console.error("Chat request failed:", error);
+      throw error;
+    }
+  };
+  /**
+   * エラーを処理し、適切なエラーメッセージを設定する
+   * @param {unknown} error - 処理するエラーオブジェクト
+   */
+const handleError = (error: unknown) => {
+  if (axios.isAxiosError(error)) {
+    const errorMessage = error.response?.data?.message || error.message;
+    console.error("Axios エラー:", errorMessage);
+    setServerErrorCallback(errorMessage);
+  } else if (error instanceof Error) {
+    console.error("エラー:", error.message);
+    setServerErrorCallback(error.message);
+  } else {
+    console.error("未知のエラー:", error);
+    setServerErrorCallback("未知のエラーが発生しました");
+  }
+};
+
+
+  useEffect(() => {
+    console.log("chatResponse updated:", chatResponse);
+    if (chatResponse.length > 0) {
+      const transformedTasks = chatResponse.map((task, index) => ({
+        id: index + 1,
+        name: String(task.taskName ?? ""),  // taskName を使用
+        taskTime: task.taskTime ?? 0,  // taskTime を使用
+        taskPriority: task.taskPriority,  // taskPriority を使用
+        order: index + 1,
+        userId: task.userId,
+        goalId: task.goalId,
+        description: task.description,
+        elapsedTime: task.elapsedTime,
+        reviewInterval: task.reviewInterval || 0,
+        repetitionCount: task.repetitionCount || 0,
+        lastNotificationSent: task.lastNotificationSent || null,
+        createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+        updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
+      }));
+      setTasks(transformedTasks);
+    }
+  }, [chatResponse]);
+
+  useEffect(() => {
+    console.log("tasks updated:", tasks);
+  }, [tasks]);
+
+  useEffect(() => {
+    if (chatResponse.length > 0 && tasks.length === 0) {
+      setTasks(chatResponse);
+    }
+  }, [chatResponse, tasks]);
+
+
+  /**
+   * 指定された目標IDに関連するタスクを取得する
+   * @param {number} id - 目標ID
+   * @returns {Promise<void>}
+   */
+  const fetchTasks = useCallback(async (goalId: number) => {
+    try {
+      const response = await axios.get(API_ENDPOINTS.GOAL_TASKS(goalId));
+      console.log("API response for tasks:", response.data);
+      const fetchedTasks = response.data.tasks;
+      if (Array.isArray(fetchedTasks)) {
+        console.log("Fetched tasks:", fetchedTasks);
+        setTasksCallback(fetchedTasks);
+      } else {
+        console.error("Fetched tasks is not an array:", response.data);
+        setTasksCallback([]);
+      }
+    } catch (error) {
+      console.error("Failed to fetch tasks:", error);
+      setServerErrorCallback("タスクの取得中にエラーが発生しました");
+      setTasksCallback([]);
+    }
+  }, [setTasksCallback, setServerErrorCallback]);
+
+  useEffect(() => {
+    if (selectedGoal) {
+      fetchTasks(selectedGoal.id);
+    }
+  }, [selectedGoal, fetchTasks]);
+
+  // const fetchTasks = async (goalId: number) => {
+  //   try {
+  //     const response = await axios.get(API_ENDPOINTS.GOAL_TASKS(goalId));
+  //     console.log("Fetched tasks:", response.data);
+  //     if (response.data && Array.isArray(response.data)) {
+  //       const transformedTasks = transformTasks(response.data);
+  //       setTasks(transformedTasks);
+  //       console.log("Transformed tasks:", transformedTasks);
+  //     } else {
+  //       console.error("Unexpected response format:", response.data);
+  //       setServerError("タスクデータの形式が不正です");
+  //     }
+  //   } catch (error) {
+  //     console.error("Error fetching tasks:", error);
+  //     setServerError("タスクの取得に失敗しました");
+  //   }
+  // };
+
+
+  const handleEdit = (task: Task) => {
+    if (!task || !task.id) {
+      console.error("Invalid task object:", task);
+      return;
+    }
+    setEditingId(task.id.toString());  // number を string に変換
+    setEditedTask({ ...task });
+  };
+
+  // const transformTasks = (tasks: any[]): Task[] => {
+  //   return tasks.map((task, index) => ({
+  //     id: index + 1,
+  //     name: task.taskName,
+  //     taskTime: task.taskTime,
+  //     taskPriority: task.taskPriority,
+  //     order: index + 1,
+  //     userId: task.userId,
+  //     goalId: task.goalId,
+  //     description: task.description,
+  //     elapsedTime: task.elapsedTime,
+  //     reviewInterval: task.reviewInterval || 0,
+  //     repetitionCount: task.repetitionCount || 0,
+  //     lastNotificationSent: task.lastNotificationSent || null,
+  //     createdAt: task.createdAt ? new Date(task.createdAt).toISOString() : new Date().toISOString(),
+  //     updatedAt: task.updatedAt ? new Date(task.updatedAt).toISOString() : new Date().toISOString(),
+  //   }));
+  // };
+  if (errorMessage) {
+    return <div>{errorMessage}</div>;  // エラーメッセージを表示
+  }
+
+  if (!userId) {
+    return <div>Loading...</div>;  // ユーザーIDがまだ取得されていない場合
+  }
+
+  console.log("Validation errors:", errors);
+  console.log("chatResponse:", chatResponse);
+
   return (
     <>
-      <section className="container mx-auto p-6">
-        <h1 className="text-3xl font-bold mb-4">目標設定</h1>
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+      <section className="section">
+        <h1 className="h1">近い未来の目標</h1>
+        <form onSubmit={handleSubmit(onSubmit)}>
           <div className="my-5">
-            <Label htmlFor="name" className="w-full block text-left">
-              目標名
-            </Label>
-            <Input
+            <Label htmlFor="name" className="w-full block text-left">目標</Label>
+            <Textarea
               id="name"
-              className="my-2"
               {...register("name", { required: "目標名は必須です" })}
             />
-            {errors.name && (
-              <p className="text-red-600 text-left">{errors.name.message}</p>
-            )}
+            {errors.name && <p className="text-red-600 text-left">{errors.name.message}</p>}
           </div>
+
           <div className="my-5">
             <Label
-              htmlFor="currentStatus"
+              htmlFor="currentSituation"
               className="w-full block text-left"
             >
-              現在の状況
+              現状
             </Label>
             <Input
+              type="text"
+              className=""
               id="currentStatus"
-              className="my-2"
               {...register("currentStatus", {
-                required: "現在の状況は必須です",
+                required: "現状は必須です",
               })}
             />
             {errors.currentStatus && (
@@ -594,12 +877,12 @@ const Goal: React.FC<GoalProps> = () => {
         </Link>
       </div>
       {showSchedule && (
-        <div className="schedule-modal">
-          <Button onClick={handleCloseSchedule} className="schedule_close">閉じる</Button>
-          <ScheduleComponent tasks={tasks} hoursPerDay={hoursPerDay} startTime={startTime} />
-          {console.log("Tasks passed to ScheduleComponent:", tasks)}
-        </div>
-      )}
+  <div className="schedule-modal">
+    <Button onClick={handleCloseSchedule} className="schedule_close">閉じる</Button>
+    <ScheduleComponent tasks={tasks} hoursPerDay={hoursPerDay} startTime={startTime} />
+    {console.log("Tasks passed to ScheduleComponent:", tasks)}
+  </div>
+)}
     </>
   );
 };

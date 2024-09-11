@@ -28,35 +28,39 @@ const SortableItem: React.FC<SortableItemProps> = ({
   console.log(editedTask);
   return (
     <tr ref={setNodeRef} style={style} {...attributes} {...listeners}>
-      <td className="border px-4 py-2">
-        {task.order != null ? task.order.toString() : (index + 1).toString()}
-      </td>
+<td className="border px-4 py-2">
+  {task.order != null && task.order !== 0
+    ? task.order.toString()
+    : task.taskOrder != null
+    ? task.taskOrder.toString()
+    : (index + 1).toString()}
+</td>
       <td className="border px-4 py-2">
       {isEditing ? (
           <Input
             value={editedTask?.taskName || editedTask?.name}
-            onChange={(e) => handleChange(e, "taskName")}
+            onChange={(e) => handleChange(e, editedTask?.taskName ? "taskName" : "name")}
           />
         ) : (
           task.taskName || task.name
         )}
       </td>
       <td className="border px-4 py-2">
-        {isEditing ? (
-          <Input
-            value={editedTask?.taskTime?.toString() || ""}
-            onChange={(e) => handleChange(e, "taskTime")}
-            type="number"
-          />
-        ) : (
-          task.taskTime != null ? task.taskTime.toString() : "0"
-        )}
+      {isEditing ? (
+    <Input
+      value={editedTask?.taskTime?.toString() || editedTask?.estimated_time?.toString() || ""}
+      onChange={(e) => handleChange(e, editedTask?.taskTime ? "taskTime" : "estimated_time")}
+      type="number"
+    />
+  ) : (
+    task.taskTime != null ? task.taskTime : task.estimated_time
+  )}
       </td>
       <td className="border px-4 py-2">
         {isEditing ? (
           <select
-            value={String(editedTask?.taskPriority || 1)}
-            onChange={(e) => handleChange(e, "taskPriority")}
+            value={String(editedTask?.taskPriority ?? task?.taskPriority ?? 1)}
+            onChange={(e) => handleChange(e, "priority")}
             className="w-full border rounded px-2 py-1"
           >
             <option value="1">低</option>
@@ -66,6 +70,12 @@ const SortableItem: React.FC<SortableItemProps> = ({
         ) : task.taskPriority === 1 ? (
           "低"
         ) : task.taskPriority === 2 ? (
+          "中"
+        ) : task.taskPriority === 3 ? (
+          "高"
+        ) : task.priority === 1 ? (
+          "低"
+        ) : task.priority === 2 ? (
           "中"
         ) : (
           "高"

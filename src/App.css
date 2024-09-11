@@ -119,3 +119,34 @@ nav a {
 .userInfo svg {
   width: 4rem;
 }
+
+.schedule-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  position: relative;
+}
+
+.schedule-modal > div {
+  background-color: white;
+  padding: 20px;
+  border-radius: 8px;
+  width: 80%;
+  max-width: 1000px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.schedule-modal .schedule_close {
+  position: absolute;
+  left: .5rem;
+  top: 1.5rem;
+}

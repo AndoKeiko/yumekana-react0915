@@ -4,7 +4,7 @@ import { API_ENDPOINTS } from "@/config/api";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
-import { FaTrashCan, FaArrowLeft, FaArrowRight } from "react-icons/fa6"; // FaArrowRightを追加
+import { FaTrashCan, FaArrowLeft, FaArrowRight } from "react-icons/fa6";
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import type { GoalItem } from "@/Types/index";
@@ -12,21 +12,34 @@ import type { GoalItem } from "@/Types/index";
 interface GoalsListPageProps {
   user_id: string;
   initialGoals?: GoalItem[];
-  onGoalDelete: (id: number) => Promise<void>;
+  // onGoalDelete: (id: number) => Promise<void>;
 }
 
 const GoalsListPage: React.FC<GoalsListPageProps> = ({
   user_id,
   initialGoals = [],
-  onGoalDelete,
+  // onGoalDelete,
 }) => {
   const [goals, setGoals] = useState<GoalItem[]>(initialGoals);
   const [selectedGoal, setSelectedGoal] = useState<GoalItem | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(true);
-  const [currentPage, setCurrentPage] = useState<number>(1); // 現在のページ番号
-  const itemsPerPage = 10; // 1ページあたりのアイテム数
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const itemsPerPage = 10;
   const navigate = useNavigate();
+
+  const onGoalDelete = async (id: number) => {
+    try {
+      await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
+      setGoals(prevGoals => prevGoals.filter(goal => goal.id !== id));
+      if (selectedGoal && selectedGoal.id === id) {
+        setSelectedGoal(null);
+      }
+    } catch (error) {
+      console.error("Failed to delete goal:", error);
+      setServerError("目標の削除に失敗しました");
+    }
+  };
 
   const formatDateRange = useCallback((start: string, end: string) => {
     if (!start || !end) return "日付が不明です";
@@ -38,19 +51,36 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
     return `${formattedStart}～${formattedEnd}（${duration}日間）`;
   }, []);
 
+  const handleGoalClick = useCallback((goal: GoalItem) => {
+    navigate(`/tasks/${goal.id}`, { state: { goalName: goal.name } });
+  }, [navigate]);
+
+  useEffect(() => {
+    console.log("Initial goals:", initialGoals);
+    console.log("Current goals state:", goals);
+  }, [initialGoals, goals]);
+
   const fetchGoals = useCallback(async () => {
     if (!user_id) {
       setServerError("ユーザーIDが見つかりません。ログインしてください");
+      setIsLoading(false);
       return;
     }
-    setIsLoading(true);
     try {
       const response = await axios.get<GoalItem[]>(API_ENDPOINTS.USER_GOALS(user_id));
-      setGoals(response.data);
+      console.log("Fetched goals:", response.data);
+      if (Array.isArray(response.data)) {
+        const sortedGoals = response.data.sort((a, b) => new Date(b.period_start).getTime() - new Date(a.period_start).getTime());
+        setGoals(sortedGoals);
+      } else {
+        console.error("Unexpected response format:", response.data);
+        setGoals([]);
+      }
       setServerError(null);
     } catch (error) {
       console.error("Failed to fetch goals:", error);
       setServerError("ユーザーの目標を取得できませんでした");
+      setGoals([]);
     } finally {
       setIsLoading(false);
     }
@@ -65,11 +95,14 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
     navigate(`/tasks/${goal.id}`);
   }, [navigate]);
 
-  const handleGoalDelete = async (id: number, event: React.MouseEvent) => {
+
+  const handleGoalDelete = useCallback(async (id: number, event: React.MouseEvent) => {
     event.stopPropagation();
+    console.log("handleGoalDelete called with id:", id); // デバッグログ
     try {
-      await onGoalDelete(id);
-      setGoals(goals.filter((goal) => goal.id !== id));
+      await axios.delete(API_ENDPOINTS.DELETE_GOAL(id));
+      console.log("Goal deleted successfully"); // デバッグログ
+      setGoals(prevGoals => prevGoals.filter((goal) => goal.id !== id));
       if (selectedGoal && selectedGoal.id === id) {
         setSelectedGoal(null);
       }
@@ -77,11 +110,12 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
       console.error("Failed to delete goal:", error);
       setServerError("目標の削除に失敗しました");
     }
-  };
+  }, [selectedGoal]);
 
-  const handlePageChange = (newPage: number) => {
+
+  const handlePageChange = useCallback((newPage: number) => {
     setCurrentPage(newPage);
-  };
+  }, []);
 
   const paginatedGoals = goals.slice((currentPage - 1) * itemsPerPage, currentPage * itemsPerPage);
 
@@ -89,10 +123,11 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
 
   return (
     <section className="section">
+      {/* <pre>{JSON.stringify(goals, null, 2)}</pre> */}
       <Button
         variant="ghost"
         size="icon"
-        onClick={() => navigate(-1)} // 1ページ前に戻る
+        onClick={() => navigate(-1)}
         className="mb-4"
       >
         <FaArrowLeft className="h-4 w-4" />
@@ -114,10 +149,7 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
           {paginatedGoals.map((goal) => (
             <li
               key={goal.id}
-              onClick={() => {
-                console.log("Clicked goal:あああ", goal);
-                handleGoalSelect(goal);
-              }}
+              onClick={() => handleGoalSelect(goal)}
               className={`flex items-center justify-between py-5 px-8 cursor-pointer ${selectedGoal?.id === goal.id ? "bg-blue-100" : "hover:bg-gray-100"
                 }`}
             >
@@ -156,9 +188,6 @@ const GoalsListPage: React.FC<GoalsListPageProps> = ({
           <FaArrowRight className="h-4 w-4" />
         </Button>
       </div>
-
-
-      <Button variant="ghost" size="icon" onClick={() => navigate(-1)} className="mb-4">前のページに戻る</Button>
     </section>
   );
 };

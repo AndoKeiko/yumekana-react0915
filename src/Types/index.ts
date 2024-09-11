@@ -25,7 +25,6 @@ export interface AuthState {
 
 export interface SortableItemProps {
   id: number;
-  goalId?: number; 
   task: Task;
   editingId: string | null;
   editedTask: Task | null;
@@ -33,8 +32,7 @@ export interface SortableItemProps {
   handleSave: (id: number) => void;
   handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: string) => void;
   handleDeleteTask: (id: number) => void;
-  index:number;
-  onDelete: () => void; // この行を追加
+  index: number;
 }
 
 
@@ -91,6 +89,7 @@ export interface Task {
   description: string | null;
   elapsedTime: number;
   order: number;
+  taskOrder?: number;
   reviewInterval: 'next_day' | '7_days' | '14_days' | '28_days' | '56_days' | 'completed';
   repetitionCount: number;
   lastNotificationSent: string | null;
@@ -98,7 +97,9 @@ export interface Task {
   updatedAt: string;
   taskTime?: number;
   taskName?: string;
-  taskPriority?: number; 
+  taskPriority?: number;
+  priority?: number;
+  estimated_time?: number;
 }
 
 export interface ScheduleProps {

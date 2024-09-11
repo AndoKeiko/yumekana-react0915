@@ -1,24 +1,31 @@
+'use client'
+
 import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { Button } from "@/components/ui/button";
-import { FaTrashCan } from "react-icons/fa6";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { API_ENDPOINTS } from "@/config/api";
 import { format, differenceInDays, parseISO } from 'date-fns';
 import { ja } from 'date-fns/locale';
 import { GoalItem, GoalsListProps, TaskItem } from "@/Types";
+import SortableItem from "./SortableItem";
+import { DndContext, closestCenter, KeyboardSensor, PointerSensor, useSensor, useSensors } from '@dnd-kit/core';
+import { SortableContext, sortableKeyboardCoordinates, verticalListSortingStrategy, arrayMove } from '@dnd-kit/sortable';
+import { FaTrashCan } from "react-icons/fa6";
 
-const GoalsList: React.FC<GoalsListProps> = ({
-  user_id,
-  goals: initialGoals,
-  onGoalDelete,
-  selectedGoal,
-}) => {
+export default function GoalsList({ user_id, goals: initialGoals, onGoalDelete, selectedGoal }: GoalsListProps) {
   const [goals, setGoals] = useState<GoalItem[]>(initialGoals);
   const [serverError, setServerError] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState<boolean>(false);
   const [selectedGoalDetails, setSelectedGoalDetails] = useState<GoalItem | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
+
+  const sensors = useSensors(
+    useSensor(PointerSensor),
+    useSensor(KeyboardSensor, {
+      coordinateGetter: sortableKeyboardCoordinates,
+    })
+  );
 
   const formatDateRange = useCallback((start: string, end: string) => {
     if (!start || !end) return "日付が不明です";
@@ -38,6 +45,7 @@ const GoalsList: React.FC<GoalsListProps> = ({
       if (Array.isArray(fetchedTasks)) {
         console.log("Fetched tasks:", fetchedTasks);
         setTasks(fetchedTasks);
+        console.log("Tasks set in Goal component:", fetchedTasks);
       } else {
         console.error("Fetched tasks is not an array:", response.data);
         setTasks([]);
@@ -55,11 +63,11 @@ const GoalsList: React.FC<GoalsListProps> = ({
     setTasks([]); // タスクをリセット
     try {
       await fetchTasks(goal.id);
-      console.log('Tasks after fetching:', tasks);  // この行を追加
+      console.log('Tasks after fetching:', tasks);
     } catch (error) {
       console.error('Error fetching tasks:', error);
     }
-  }, [fetchTasks, tasks]);  // tasksを依存配列に追加
+  }, [fetchTasks, tasks]);
 
 
 
@@ -110,7 +118,7 @@ const GoalsList: React.FC<GoalsListProps> = ({
       {serverError && (
         <Alert>
           <AlertDescription>
-            <p style={{ color: "red" }}>{serverError}</p>
+          <p className="text-red-500">{serverError}</p>
           </AlertDescription>
         </Alert>
       )}
@@ -171,4 +179,4 @@ const GoalsList: React.FC<GoalsListProps> = ({
   );
 };
 
-export default GoalsList;
+// export default GoalsList;

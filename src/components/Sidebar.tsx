@@ -18,7 +18,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isAuth, onLogout }) => {
           <UserInfo />
           <Link to="/" className="p-2"><IoMdHome /> ホーム</Link>
           <Link to="/" className="p-2"><TbTargetArrow /> 目標</Link>
-          <Link to="/Tasklist" className="p-2"><MdOutlineTaskAlt /> タスクリスト</Link>
+          <Link to="/goallist" className="p-2"><MdOutlineTaskAlt /> タスクリスト</Link>
           <Link to="/CreatePost" className="p-2"><FaBookOpen /> 学習記録</Link>
         </div>
         <div className="flex flex-col items-center justify-center w-full mt-auto">
