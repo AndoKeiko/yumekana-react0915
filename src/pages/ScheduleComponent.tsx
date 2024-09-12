@@ -14,31 +14,53 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
 interface ScheduleComponentProps {
-  tasks: Task[]
-  hoursPerDay: number
-  startTime: string
+  events: Array<{
+    title: string;
+    start: string;
+    end: string;
+  }>;
+  hoursPerDay: number;
+  startTime: string;
+  tasks: Task[];
+}
+
+interface CalendarEvent {
+  title: string;      // イベントのタイトル
+  start: Date | string; // イベントの開始日時
+  end?: Date | string;  // イベントの終了日時（オプション）
+  allDay?: boolean;     // 終日イベントかどうか（オプション）
+  // その他のオプションプロパティ
+  color?: string;       // イベントの背景色
+  textColor?: string;   // イベントのテキスト色
+  // ... 他のカスタムプロパティ
 }
 
 export default function ScheduleComponent({ 
-  tasks, 
-  hoursPerDay = 8, 
-  startTime = "09:00" 
+  events: initialEvents,
+  hoursPerDay: initialHoursPerDay,
+  startTime: initialStartTime,
+  tasks: initialTasks
 }: ScheduleComponentProps) {
+  console.log("ScheduleComponent - 受け取ったprops:", { initialEvents, initialHoursPerDay, initialStartTime, initialTasks });
+
   const [calendar, setCalendar] = useState<Calendar | null>(null)
   const [selectedDate, setSelectedDate] = useState<Date>(new Date())
-  const [localHoursPerDay, setLocalHoursPerDay] = useState(hoursPerDay)
-  const [localStartTime, setLocalStartTime] = useState(startTime)
-  const [events, setEvents] = useState<any[]>([])
+  const [localHoursPerDay, setLocalHoursPerDay] = useState(initialHoursPerDay)
+  const [localStartTime, setLocalStartTime] = useState(initialStartTime)
+  const [events, setEvents] = useState<any[]>(initialEvents)
+  const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks)
 
-  const generateSchedule = useCallback((tasks: Task[], hoursPerDay: number, startTime: string) => {
-    if (!Array.isArray(tasks)) {
-      console.error('Tasks is not an array:', tasks)
+  const generateSchedule = useCallback((currentTasks: Task[], currentHoursPerDay: number, currentStartTime: string) => {
+    console.log("generateSchedule呼び出し:", { currentTasks, currentHoursPerDay, currentStartTime });
+  
+    if (!Array.isArray(currentTasks)) {
+      console.error('Tasks is not an array:', currentTasks)
       return []
     }
 
-    const sortedTasks = [...tasks].sort((a, b) => (a.order || 0) - (b.order || 0))
+    const sortedTasks = [...currentTasks].sort((a, b) => (a.order || 0) - (b.order || 0))
     let currentDate = moment().startOf('day')
-    const events = []
+    const generatedEvents = []
 
     for (const task of sortedTasks) {
       let remainingTime = task.taskTime || 0
@@ -48,7 +70,7 @@ export default function ScheduleComponent({
         const taskStart = moment(currentDate).set({ hour: hours, minute: minutes })
         const taskEnd = moment(taskStart).add(availableTime, 'hours')
 
-        events.push({
+        generatedEvents.push({
           title: task.name || task.taskName || 'Unnamed Task',
           start: taskStart.toDate(),
           end: taskEnd.toDate(),
@@ -62,43 +84,62 @@ export default function ScheduleComponent({
         currentDate = currentDate.add(1, 'day')
       }
     }
-
-    return events
+    console.log("生成されたイベント:", generatedEvents);
+    return generatedEvents
   }, [])
 
   useEffect(() => {
-    if (Array.isArray(tasks) && tasks.length > 0) {
-      const newEvents = generateSchedule(tasks, localHoursPerDay, localStartTime)
-      setEvents(newEvents)
+    setEvents(initialEvents);
+    setLocalHoursPerDay(initialHoursPerDay);
+    setLocalStartTime(initialStartTime);
+    setLocalTasks(initialTasks);
+  }, [initialEvents, initialHoursPerDay, initialStartTime, initialTasks]);
+
+  useEffect(() => {
+    console.log("initialEvents が更新されました:", initialEvents);
+    setEvents(initialEvents);
+  }, [initialEvents]);
+  
+  useEffect(() => {
+    if (Array.isArray(localTasks) && localTasks.length > 0) {
+      const newEvents = generateSchedule(localTasks, localHoursPerDay, localStartTime);
+      console.log("生成されたイベント:", newEvents);
+      setEvents(newEvents);
     }
-  }, [tasks, localHoursPerDay, localStartTime, generateSchedule])
+  }, [localTasks, localHoursPerDay, localStartTime, generateSchedule]);
 
   useEffect(() => {
     const calendarEl = document.getElementById('calendar')
-    if (calendarEl) {
+    if (calendarEl && events.length > 0) {
+      console.log("カレンダー初期化:", { events });
       const newCalendar = new Calendar(calendarEl, {
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
         initialView: 'timeGridWeek',
+        initialDate: new Date(), // 現在の日付を初期表示日として設定
+        timeZone: 'local', // または 'Asia/Tokyo' など
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
           right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
-        events: events, // generateSchedule(tasks, localHoursPerDay, localStartTime)の代わりにeventsを使用
+        events: events,
+        slotMinTime: localStartTime,
+        slotDuration: '01:00:00',
+        allDaySlot: false,
         eventClick: (info) => {
-          alert(`タスク: ${info.event.title}\n説明: ${info.event.extendedProps.description}\n優先度: ${info.event.extendedProps.priority}`)
+          alert(`タスク: ${info.event.title}\n開始: ${info.event.start}\n終了: ${info.event.end}`)
         }
       })
       newCalendar.render()
       setCalendar(newCalendar)
     }
-
+  
     return () => {
       if (calendar) {
         calendar.destroy()
       }
     }
-  }, [events])
+  }, [events, localStartTime])
 
   useEffect(() => {
     if (calendar && selectedDate) {
@@ -115,7 +156,9 @@ export default function ScheduleComponent({
   const handleApplySettings = () => {
     if (calendar) {
       calendar.removeAllEvents()
-      calendar.addEventSource(generateSchedule(tasks, localHoursPerDay, localStartTime))
+      const newEvents = generateSchedule(tasks, localHoursPerDay, localStartTime);
+      calendar.addEventSource(newEvents)
+      console.log("設定が適用されました:", { localHoursPerDay, localStartTime, newEvents });
     }
   }
 
@@ -155,7 +198,10 @@ export default function ScheduleComponent({
         </div>
         <Button onClick={handleApplySettings}>設定を適用</Button>
       </div>
-      <div id="calendar" className="h-[600px]" />
+      <div>
+      <h2>スケジュール</h2>
+      <div id="calendar" style={{ height: '600px' }} />
+    </div>
     </div>
   )
 }

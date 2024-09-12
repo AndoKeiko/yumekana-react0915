@@ -52,39 +52,39 @@ const TaskListPage: React.FC<TaskListPageProps> = ({ onSaveTasks }) => {
   const generateSchedule = (tasks: Task[], config: ScheduleConfig) => {
     console.log("Generating schedule with config:", config);
     console.log("Tasks to schedule:", tasks);
-  
+
     let currentDate = moment(config.startDate).startOf('day');
     const schedule: any[] = [];
-  
+
     tasks.forEach(task => {
       let remainingHours = parseFloat(task.estimated_time || task.taskTime || "0");
       while (remainingHours > 0) {
         const hoursToday = Math.min(remainingHours, config.hoursPerDay);
         const startTime = moment(`${currentDate.format('YYYY-MM-DD')} ${config.startTime}`, 'YYYY-MM-DD HH:mm');
         const endTime = moment(startTime).add(hoursToday, 'hours');
-  
+
         schedule.push({
           title: task.name || task.taskName,
           start: startTime.toDate(),
           end: endTime.toDate(),
         });
-  
+
         remainingHours -= hoursToday;
         currentDate = currentDate.add(1, 'day');
       }
     });
-  
+
     console.log("Generated schedule:", schedule);
     return schedule;
   };
 
 
-const handleReflectSchedule = () => {
-  const generatedSchedule = generateSchedule(tasks, scheduleConfig);
-  setEvents(generatedSchedule);
-  setShowSchedule(true);
-  console.log("Generated Calendar Events:", generatedSchedule);
-};
+  const handleReflectSchedule = () => {
+    const generatedSchedule = generateSchedule(tasks, scheduleConfig);
+    setEvents(generatedSchedule);
+    setShowSchedule(true);
+    console.log("Generated Calendar Events:", generatedSchedule);
+  };
 
   const handleDeleteTask = (id: string | number) => {
     setTasks((prevTasks) => prevTasks.filter((task) => task.id !== id));
@@ -185,7 +185,14 @@ const handleReflectSchedule = () => {
           {showSchedule && (
             <div className="schedule-modal">
               <Button onClick={() => setShowSchedule(false)}>閉じる</Button>
-              <ScheduleComponent events={events} />
+              {console.log("eventsあああ", events)}
+              {console.log("スケジュール設定:", { hoursPerDay, startTime })}
+              <ScheduleComponent
+                events={events}
+                hoursPerDay={hoursPerDay}
+                startTime={startTime}
+                tasks={tasks}  // ここを追加
+              />
             </div>
           )}
         </>
@@ -193,4 +200,4 @@ const handleReflectSchedule = () => {
     </div>
   );
 };
-      export default TaskListPage;
+export default TaskListPage;
