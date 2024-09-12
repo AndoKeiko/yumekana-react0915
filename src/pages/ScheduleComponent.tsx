@@ -50,6 +50,7 @@ export default function ScheduleComponent({
   const [events, setEvents] = useState<any[]>(initialEvents)
   const [localTasks, setLocalTasks] = useState<Task[]>(initialTasks)
 
+
   const generateSchedule = useCallback((currentTasks: Task[], currentHoursPerDay: number, currentStartTime: string) => {
     console.log("generateSchedule呼び出し:", { currentTasks, currentHoursPerDay, currentStartTime });
   
@@ -57,19 +58,26 @@ export default function ScheduleComponent({
       console.error('Tasks is not an array:', currentTasks)
       return []
     }
-
+  
     const sortedTasks = [...currentTasks].sort((a, b) => (a.order || 0) - (b.order || 0))
     let currentDate = moment().startOf('day')
-    const generatedEvents = []
-
+    const generatedEvents: CalendarEvent[] = []
+    let remainingHoursForDay = currentHoursPerDay
+  
     for (const task of sortedTasks) {
-      let remainingTime = task.taskTime || 0
+      let remainingTime = task.estimated_time || 0
       while (remainingTime > 0) {
-        const availableTime = Math.min(remainingTime, hoursPerDay)
-        const [hours, minutes] = startTime.split(':').map(Number)
-        const taskStart = moment(currentDate).set({ hour: hours, minute: minutes })
+        const [hours, minutes] = currentStartTime.split(':').map(Number)
+        let taskStart = moment(currentDate).set({ hour: hours, minute: minutes })
+        
+        // 当日の残り時間を考慮
+        if (remainingHoursForDay < currentHoursPerDay) {
+          taskStart = taskStart.add(currentHoursPerDay - remainingHoursForDay, 'hours')
+        }
+  
+        const availableTime = Math.min(remainingTime, remainingHoursForDay)
         const taskEnd = moment(taskStart).add(availableTime, 'hours')
-
+  
         generatedEvents.push({
           title: task.name || task.taskName || 'Unnamed Task',
           start: taskStart.toDate(),
@@ -79,34 +87,20 @@ export default function ScheduleComponent({
             priority: task.taskPriority || 0
           }
         })
-
+  
         remainingTime -= availableTime
-        currentDate = currentDate.add(1, 'day')
+        remainingHoursForDay -= availableTime
+  
+        // 日をまたぐ場合
+        if (remainingHoursForDay <= 0) {
+          currentDate = currentDate.add(1, 'day')
+          remainingHoursForDay = currentHoursPerDay
+        }
       }
     }
     console.log("生成されたイベント:", generatedEvents);
     return generatedEvents
   }, [])
-
-  useEffect(() => {
-    setEvents(initialEvents);
-    setLocalHoursPerDay(initialHoursPerDay);
-    setLocalStartTime(initialStartTime);
-    setLocalTasks(initialTasks);
-  }, [initialEvents, initialHoursPerDay, initialStartTime, initialTasks]);
-
-  useEffect(() => {
-    console.log("initialEvents が更新されました:", initialEvents);
-    setEvents(initialEvents);
-  }, [initialEvents]);
-  
-  useEffect(() => {
-    if (Array.isArray(localTasks) && localTasks.length > 0) {
-      const newEvents = generateSchedule(localTasks, localHoursPerDay, localStartTime);
-      console.log("生成されたイベント:", newEvents);
-      setEvents(newEvents);
-    }
-  }, [localTasks, localHoursPerDay, localStartTime, generateSchedule]);
 
   useEffect(() => {
     const calendarEl = document.getElementById('calendar')
@@ -115,14 +109,18 @@ export default function ScheduleComponent({
       const newCalendar = new Calendar(calendarEl, {
         plugins: [dayGridPlugin, timeGridPlugin, interactionPlugin],
         initialView: 'timeGridWeek',
-        initialDate: new Date(), // 現在の日付を初期表示日として設定
-        timeZone: 'local', // または 'Asia/Tokyo' など
+        initialDate: new Date(),
+        timeZone: 'local',
         headerToolbar: {
           left: 'prev,next today',
           center: 'title',
           right: 'dayGridMonth,timeGridWeek,timeGridDay'
         },
-        events: events,
+        events: events.map(event => ({
+          ...event,
+          start: new Date(event.start),
+          end: new Date(event.end)
+        })),
         slotMinTime: localStartTime,
         slotDuration: '01:00:00',
         allDaySlot: false,
@@ -142,6 +140,19 @@ export default function ScheduleComponent({
   }, [events, localStartTime])
 
   useEffect(() => {
+    console.log("localTasks updated:", localTasks);
+  }, [localTasks]);
+  
+  useEffect(() => {
+    console.log("localHoursPerDay updated:", localHoursPerDay);
+  }, [localHoursPerDay]);
+  
+  useEffect(() => {
+    console.log("localStartTime updated:", localStartTime);
+  }, [localStartTime]);
+
+ 
+  useEffect(() => {
     if (calendar && selectedDate) {
       calendar.gotoDate(selectedDate)
     }
@@ -153,14 +164,22 @@ export default function ScheduleComponent({
     }
   }
 
-  const handleApplySettings = () => {
-    if (calendar) {
-      calendar.removeAllEvents()
-      const newEvents = generateSchedule(tasks, localHoursPerDay, localStartTime);
-      calendar.addEventSource(newEvents)
-      console.log("設定が適用されました:", { localHoursPerDay, localStartTime, newEvents });
-    }
+const handleApplySettings = () => {
+  if (calendar) {
+    calendar.removeAllEvents()
+    const newEvents = generateSchedule(localTasks, localHoursPerDay, localStartTime);
+    calendar.addEventSource(newEvents)
+    console.log("設定が適用されました:", { localHoursPerDay, localStartTime, newEvents });
   }
+}
+
+useEffect(() => {
+  if (Array.isArray(localTasks) && localTasks.length > 0) {
+    const newEvents = generateSchedule(localTasks, localHoursPerDay, localStartTime);
+    setEvents(newEvents);
+  }
+}, [localTasks, localHoursPerDay, localStartTime, generateSchedule]);
+
 
   return (
     <div className="space-y-4">
