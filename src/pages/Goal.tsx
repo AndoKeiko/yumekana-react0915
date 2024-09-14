@@ -432,6 +432,10 @@ const Goal: React.FC<GoalProps> = () => {
     const date = new Date(dateString);
     return date.toISOString().split("T")[0];
   };
+  const handleEdit = useCallback((task: Task) => {
+    setEditingId(task.id.toString());
+    setEditedTask({ ...task });
+  }, []);
 
   return (
     <>
