@@ -2,70 +2,40 @@ const BASE_URL = "http://localhost/api";
 
 // API Endpoints
 export const API_ENDPOINTS = {
-
-  // Google認証のリダイレクトURL
+  // 認証関連
   GOOGLE_AUTH: `${BASE_URL}/auth/google`,
-
-  // Google認証のコールバックURL
   GOOGLE_AUTH_CALLBACK: `${BASE_URL}/auth/google/callback`,
-
-  // ユーザー登録エンドポイント
   REGISTER: `${BASE_URL}/register`,
-
-  // ログアウトエンドポイント
   LOGOUT: `${BASE_URL}/logout`,
+  LOGIN: `${BASE_URL}/login`,
+  CSRF_COOKIE: `http://localhost/sanctum/csrf-cookie`,
 
-  // ユーザー情報取得エンドポイント
+  // ユーザー関連
   USER: `${BASE_URL}/user`,
-
-  // CSRFトークン取得エンドポイント
-  CSRF_COOKIE: `/sanctum/csrf-cookie`,
-
-  // 新しいユーザーを登録するエンドポイント
+  CURRENT_USER: `${BASE_URL}/user/me`,
   CREATE_USER: `${BASE_URL}/users`,
+  UPDATE_USER: (userId: number) => `${BASE_URL}/users/${userId}`,
+  RESET_PASSWORD: `${BASE_URL}/password/reset`,
 
-  // ユーザーのログインを行うエンドポイント
-  LOGINURL: `${BASE_URL}/login`,
-
-  //全ての目標を取得
+  // 目標関連
   GOALS: `${BASE_URL}/goals`,
-
- // 特定のユーザーの全ての目標を取得するエンドポイント
-  // @param {string} userId - ユーザーの Firebase UID
-  USER_GOALS: (userId: string) => `${BASE_URL}/goals/user/${userId}`,
-  
- // 新しい目標を作成するエンドポイント
+  USER_GOALS: (userId: number) => `${BASE_URL}/goals/user/${userId}`,
   CREATE_GOAL: `${BASE_URL}/goals`,
-
-  // 特定の目標を削除するエンドポイント
-  // @param {number} goalId - 削除する目標のID
   DELETE_GOAL: (goalId: number) => `${BASE_URL}/goals/${goalId}`,
-
-  // 特定の目標の詳細を取得するエンドポイント
-  // @param {number} goalId - 詳細を取得する目標のID
+  UPDATE_GOAL: (goalId: number) => `${BASE_URL}/goals/${goalId}`,
   GOAL_DETAIL: (goalId: number) => `${BASE_URL}/goals/${goalId}`,
-
-  // 特定の目標に対してチャットリクエストを送信するエンドポイント
-  // @param {number} goalId - チャットする目標のID
   CHAT_GOAL: (goalId: number) => `${BASE_URL}/goals/${goalId}/chat`,
-
-  // 特定の目標のチャット履歴を取得するエンドポイント
-  // @param {number} goalId - チャット履歴を取得する目標のID
   CHAT_HISTORY: (goalId: number) => `${BASE_URL}/goals/${goalId}/chat-history`,
 
-  // 特定の目標に関連するタスクを取得するエンドポイント
-  // @param {number} goalId - タスクを取得する目標のID
+  // タスク関連
   GOAL_TASKS: (goalId: number) => `${BASE_URL}/goals/${goalId}/tasks`,
-
-  // 特定の目標に関連するタスクを保存するエンドポイント
-  // @param {number} goalId - タスクを保存する目標のID
   SAVE_TASKS: (goalId: number) => `${BASE_URL}/goals/${goalId}/tasks/save`,
-
-    // タスクを更新するエンドポイント
-  // @param {number} taskId - 更新するタスクのID
-  UPDATE_TASK: (taskId: number) => `${BASE_URL}/tasks/${taskId}`,
-
-  DELETE_TASK: (taskId: number) => `${BASE_URL}/tasks/${taskId}`,
+  CREATE_TASK: (goalId: number) => `${BASE_URL}/goals/${goalId}/tasks`,
+  UPDATE_TASK_ORDER: (goalId: number) => `${BASE_URL}/goals/${goalId}/tasks/order`,
+  DELETE_TASK: (goalId: number, taskId: number) => `${BASE_URL}/goals/${goalId}/tasks/${taskId}`,
+  UPDATE_TASK: (goalId: number, taskId: number) => `${BASE_URL}/goals/${goalId}/tasks/${taskId}`,
+  UPDATE_ELAPSED_TIME: (goalId: number, taskId: number) => `${BASE_URL}/goals/${goalId}/tasks/${taskId}/elapsed-time`,
+  UPDATE_REVIEW_INTERVAL: (goalId: number, taskId: number) => `${BASE_URL}/goals/${goalId}/tasks/${taskId}/review-interval`,
 };
 
 export default BASE_URL;

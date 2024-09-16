@@ -8,7 +8,7 @@ import TaskListPage from './TaskListPage'
 import GoalsListPage from './GoalsListPage'
 // import TaskList from './TaskList'
 import GoalDetail from './GoalDetail'
-import { AuthContext } from './AuthProvider'
+import { AuthContext } from '@/context/AuthProvider'
 
 const ProtectedRoute = ({ children }) => {
   const { isAuth } = React.useContext(AuthContext)

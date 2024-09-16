@@ -20,12 +20,12 @@ export default function GoalsList({ user_id, goals: initialGoals, onGoalDelete, 
   const [selectedGoalDetails, setSelectedGoalDetails] = useState<GoalItem | null>(null);
   const [tasks, setTasks] = useState<TaskItem[]>([]);
 
-  const sensors = useSensors(
-    useSensor(PointerSensor),
-    useSensor(KeyboardSensor, {
-      coordinateGetter: sortableKeyboardCoordinates,
-    })
-  );
+  // const sensors = useSensors(
+  //   useSensor(PointerSensor),
+  //   useSensor(KeyboardSensor, {
+  //     coordinateGetter: sortableKeyboardCoordinates,
+  //   })
+  // );
 
   const formatDateRange = useCallback((start: string, end: string) => {
     if (!start || !end) return "日付が不明です";

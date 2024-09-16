@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { Task } from "@/Types/index";
-// import SortableItem from './SortableItem'; // SortableItemをインポート
+import SortableItem from './SortableItem'; // SortableItemをインポート
 import ScheduleComponent from './ScheduleComponent';
 import moment from 'moment';
 
@@ -43,6 +43,7 @@ const TaskListPage: React.FC<TaskListPageProps> = ({ onSaveTasks }) => {
     startTime: "09:00",
     startDate: new Date().toISOString().split('T')[0]
   });
+
   const [events, setEvents] = useState<any[]>([]);
 
   // handleReflectSchedule 関数を TaskListPage に移動

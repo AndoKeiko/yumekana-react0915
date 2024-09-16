@@ -1,7 +1,7 @@
 import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from "react-hook-form";
-import { AuthContext } from '@/context/AuthProvider';
+import { AuthContext } from '../../context/AuthProvider';
 import type { LoginForm } from "../../Types/index";
 
 const Login: React.FC = () => {
@@ -11,14 +11,24 @@ const Login: React.FC = () => {
   const authContext = useContext(AuthContext);
 
   const onSubmit = async (data: LoginForm) => {
+    console.log('Login attempt with:', data);
     setLoginError(null);
     if (authContext && authContext.handleLogin) {
-      const success = await authContext.handleLogin(data.email, data.password);
-      if (success) {
-        navigate('/goals');
-      } else {
-        setLoginError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
+      try {
+        const success = await authContext.handleLogin(data.email, data.password);
+        console.log('Login result:', success);
+        if (success) {
+          navigate('/goals');
+        } else {
+          setLoginError('ログインに失敗しました。メールアドレスとパスワードを確認してください。');
+        }
+      } catch (error) {
+        console.error('Login error:', error);
+        setLoginError('ログイン中にエラーが発生しました。');
       }
+    } else {
+      console.error('AuthContext or handleLogin is not available');
+      setLoginError('認証システムにエラーが発生しました。');
     }
   };
 

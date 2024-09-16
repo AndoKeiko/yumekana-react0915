@@ -6,6 +6,7 @@ export interface LoginForm {
   email: string;
   password: string;
 }
+
 export interface LoginResponse {
   token: string;
   user: User;
@@ -26,14 +27,14 @@ export interface AuthState {
 export interface SortableItemProps {
   id: number;
   task: Task;
-  editingId: string | null;
-  editedTask: Task | null;
-  handleEdit: (task: Task) => void;
-  handleSave: (id: number) => void;
-  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: string) => void;
-  handleDeleteTask: (id: number) => void;
   index: number;
+  isEditing: boolean;
+  handleEditClick: () => void;
+  handleDeleteTask: () => void;
+  handleSave: () => void;
+  handleChange: (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>, field: keyof Task) => void;
 }
+
 
 
 export interface TaskItem {

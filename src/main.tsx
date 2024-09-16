@@ -9,7 +9,7 @@ import './App.css'
 import "react-day-picker/dist/style.css";
 import axios from 'axios'
 
-axios.defaults.baseURL = 'http://localhost';
+axios.defaults.baseURL = 'http://localhost/';
 axios.defaults.withCredentials = true;
 axios.defaults.headers.common['X-Requested-With'] = 'XMLHttpRequest';
 
